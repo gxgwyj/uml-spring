@@ -7,8 +7,11 @@ public V put(K key, V value) {
             // 将key为null的值put到数组下标为0处，因为jdk1.8之前在new HashMap的时候就初始化了
             // 数组，这是1.7和1.8的区别，1.7没有用就初始化了，1.8只有真正put元素的时候才去开辟数             // 组空间。
             return putForNullKey(value);
+        // 根据key计算hash
         int hash = hash(key.hashCode());
+    	// 计算数组下标
         int i = indexFor(hash, table.length);
+    	// 现在原来的数组链表中查找是否有相同的key，如果有相同的key，覆盖原来的value，返回老的value
         for (Entry<K,V> e = table[i]; e != null; e = e.next) {
             Object k;
             if (e.hash == hash && ((k = e.key) == key || key.equals(k))) {
@@ -18,7 +21,7 @@ public V put(K key, V value) {
                 return oldValue;
             }
         }
-
+		// 如果没有添加新的key到数组中
         modCount++;
         addEntry(hash, key, value, i);
         return null;
@@ -122,6 +125,41 @@ void transfer(Entry[] newTable) {
       	// 此处为什么不用 h%length？，效率高
         // 数组的长度为2的n次方，为了减少hash碰撞
         return h & (length-1);
+    }
+
+// 解释：
+h&(length-1) 等同于 h%length
+看一个列子：
+x=1<<4 
+即  x 转换成 二进制  00010000
+x-1 : 00001111
+令一个数y与x-1做与运算，可以去除y位级表示的第4位以上数：
+y :       10110010
+x-1 :     00001111
+y&(x-1) : 00000010
+等价于：
+y :    10110010
+x :    00010000
+y%x :  00000010
+```
+
+#### get方法
+
+```java
+public V get(Object key) {
+        if (key == null)
+            return getForNullKey();
+    	// 先计算索引
+        int hash = hash(key.hashCode());
+    	// 循环找出key相同的值，返回value，如果没有找到返回null
+        for (Entry<K,V> e = table[indexFor(hash, table.length)];
+             e != null;
+             e = e.next) {
+            Object k;
+            if (e.hash == hash && ((k = e.key) == key || key.equals(k)))
+                return e.value;
+        }
+        return null;
     }
 ```
 
