@@ -88,7 +88,9 @@ void addEntry(int hash, K key, V value, int bucketIndex) {
     }
 ```
 
-#### transfer方法将旧数组转移到新数组
+#### transfer方法将旧数组转移到新数组（该方法在多线程下不安全，会产生循环链）
+
+[]: https://blog.csdn.net/swpu_ocean/article/details/88917958	"1.7中的不安全和1.8中的解决"
 
 ```java
 void transfer(Entry[] newTable) {
