@@ -29,7 +29,7 @@ public HashMap(int initialCapacity, float loadFactor) {
     }
 ```
 
-tableSizeFor方法
+###### tableSizeFor方法（总是返回2的n次方）
 
 ```java
  static final int tableSizeFor(int cap) {
@@ -47,14 +47,13 @@ tableSizeFor方法
 
 ```java
 final V putVal(int hash, K key, V value, boolean onlyIfAbsent,boolean evict) {
-    Node<K,V>[] tab; // 原来的数组 
+    Node<K,V>[] tab;
     Node<K,V> p;
-    int n, // 数组长度
+    int n, 
     int i; 
     // 判断数组是否为空
     if ((tab = table) == null || (n = tab.length) == 0)
         n = (tab = resize()).length; // 生成数组，并且生成新数组的长度
-    // 索引位置 = （数组长度 - 1）& hash
     // 如果该位置的元素为空，直接赋值
     if ((p = tab[i = (n - 1) & hash]) == null)
         tab[i] = newNode(hash, key, value, null);
@@ -74,7 +73,8 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,boolean evict) {
                 // 
                 if ((e = p.next) == null) {
                     p.next = newNode(hash, key, value, null);
-                    if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                    // 如果链表的个数超过了红黑树转化的阀值，直接将链表转换成红黑树	
+                    if (binCount >= TREEIFY_THRESHOLD - 1)
                         treeifyBin(tab, hash);
                     break;
                 }
@@ -93,6 +93,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,boolean evict) {
         }
     }
     ++modCount;
+    // 如果容器的中元素的个数超过阀值，触发扩容机制
     if (++size > threshold)
         resize();
     afterNodeInsertion(evict);
