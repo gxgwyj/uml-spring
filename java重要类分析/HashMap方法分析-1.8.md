@@ -64,7 +64,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,boolean evict) {
         K k;
         // 判断原来的key值是否与新增的key值完全相同
         if (p.hash == hash && ((k = p.key) == key || (key != null && key.equals(k))))
-            e = p;// 将原值赋给临时变量
+            e = p;
         // 原来的元素是否是红黑树
         else if (p instanceof TreeNode)
             e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
