@@ -51,20 +51,20 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,boolean evict) {
     Node<K,V> p;
     int n, 
     int i; 
-    // 判断数组是否为空
+    // 第一步、判断数组是否为空,如果为空生成新的数组（与前面所说的1.8中的hashMap数组在使用的时候才会去初始化对应）
     if ((tab = table) == null || (n = tab.length) == 0)
-        n = (tab = resize()).length; // 生成数组，并且生成新数组的长度
-    // 如果该位置的元素为空，直接赋值
+        n = (tab = resize()).length;
+    
+    // 第二步、将元素放置数组中的位置（把新元素加到table中的位置，并且把就元素找出来）
     if ((p = tab[i = (n - 1) & hash]) == null)
         tab[i] = newNode(hash, key, value, null);
     else {
-        // 如果计算的位置已经存在值
-        Node<K,V> e; 
+        Node<K,V> e;
         K k;
-        // 判断原来的key值是否与新增的key值完全相同
+        // key值相同
         if (p.hash == hash && ((k = p.key) == key || (key != null && key.equals(k))))
             e = p;
-        // 原来的元素是否是红黑树
+        // 原来的节点是红黑树
         else if (p instanceof TreeNode)
             e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
         else {
@@ -72,6 +72,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,boolean evict) {
             for (int binCount = 0; ; ++binCount) {
                 // 
                 if ((e = p.next) == null) {
+                    // 尾插入法
                     p.next = newNode(hash, key, value, null);
                     // 如果链表的个数超过了红黑树转化的阀值，直接将链表转换成红黑树	
                     if (binCount >= TREEIFY_THRESHOLD - 1)
@@ -84,6 +85,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,boolean evict) {
                 p = e;
             }
         }
+        // 第三步，如果key存在元素，则直接返回原来的元素的旧值
         if (e != null) { // existing mapping for key
             V oldValue = e.value;
             if (!onlyIfAbsent || oldValue == null)
@@ -92,14 +94,67 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,boolean evict) {
             return oldValue;
         }
     }
+    // 改变的次数累加
     ++modCount;
     // 如果容器的中元素的个数超过阀值，触发扩容机制
     if (++size > threshold)
         resize();
-    afterNodeInsertion(evict);
+    afterNodeInsertion(evict);// 
     return null;
 }
 ```
+
+###### putTreeVal方法
+
+```java
+final TreeNode<K,V> putTreeVal(HashMap<K,V> map, Node<K,V>[] tab,
+                                       int h, K k, V v) {
+            Class<?> kc = null;
+            boolean searched = false;
+            TreeNode<K,V> root = (parent != null) ? root() : this;
+            for (TreeNode<K,V> p = root;;) {
+                int dir, ph; K pk;
+                if ((ph = p.hash) > h)
+                    dir = -1;
+                else if (ph < h)
+                    dir = 1;
+                else if ((pk = p.key) == k || (k != null && k.equals(pk)))
+                    return p;
+                else if ((kc == null &&
+                          (kc = comparableClassFor(k)) == null) ||
+                         (dir = compareComparables(kc, k, pk)) == 0) {
+                    if (!searched) {
+                        TreeNode<K,V> q, ch;
+                        searched = true;
+                        if (((ch = p.left) != null &&
+                             (q = ch.find(h, k, kc)) != null) ||
+                            ((ch = p.right) != null &&
+                             (q = ch.find(h, k, kc)) != null))
+                            return q;
+                    }
+                    dir = tieBreakOrder(k, pk);
+                }
+
+                TreeNode<K,V> xp = p;
+                if ((p = (dir <= 0) ? p.left : p.right) == null) {
+                    Node<K,V> xpn = xp.next;
+                    TreeNode<K,V> x = map.newTreeNode(h, k, v, xpn);
+                    if (dir <= 0)
+                        xp.left = x;
+                    else
+                        xp.right = x;
+                    xp.next = x;
+                    x.parent = x.prev = xp;
+                    if (xpn != null)
+                        ((TreeNode<K,V>)xpn).prev = x;
+                    moveRootToFront(tab, balanceInsertion(root, x));
+                    return null;
+                }
+            }
+        }
+```
+
+
 
 ##### resize（扩容）方法分析
 
@@ -157,7 +212,8 @@ final Node<K,V>[] resize() {
                     // 节点为树（红黑树）的元素
                     else if (e instanceof TreeNode)
                         ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
-                    else { // preserve order
+                    else {
+                        // 原来数组的元素被分成两段，目的为了分布均匀
                         Node<K,V> loHead = null, loTail = null;
                         Node<K,V> hiHead = null, hiTail = null;
                         Node<K,V> next;
@@ -181,10 +237,12 @@ final Node<K,V>[] resize() {
                                 hiTail = e;
                             }
                         } while ((e = next) != null);
+                       	// 第一段
                         if (loTail != null) {
                             loTail.next = null;
                             newTab[j] = loHead;
                         }
+                        // 第二段
                         if (hiTail != null) {
                             hiTail.next = null;
                             newTab[j + oldCap] = hiHead;
