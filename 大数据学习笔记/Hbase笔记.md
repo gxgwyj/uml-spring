@@ -34,3 +34,4 @@ disable 禁用user表，enable 启用user表
 
 （7）drop 'user'  删除user表
 
+#### 搭建本地伪分布式hbase环境
