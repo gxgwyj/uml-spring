@@ -123,4 +123,4 @@ zookeeper使用zab协议（paxos协议简化版）：投票选举算法，最终
 
 （2）查看根目录下的内容：ls /
 
-（3）
+（3）创建根节点下的  app1子节点并且赋值 “this is app1” create /app1 "this is app1"
