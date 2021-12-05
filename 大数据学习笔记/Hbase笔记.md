@@ -1,4 +1,10 @@
-#### **Hbase是什么？**
+## Hbase架构图
+
+![img](https://bkimg.cdn.bcebos.com/pic/b3b7d0a20cf431ad8b01445e4b36acaf2fdd9881?x-bce-process=image/watermark,image_d2F0ZXIvYmFpa2U4MA==,g_7,xp_5,yp_5/format,f_auto)
+
+
+
+## Hbase是什么？
 
 （1）K-V数据库
 
@@ -6,7 +12,19 @@
 
 （3）rowKey
 
-#### **Hbase命令**
+## Hbase数据模型
+
+Table & Column Family
+
+| **Row Key** | **Timestamp** | **Column Family** |
+| ----------- | ------------- | ----------------- |
+|             |               |                   |
+|             |               |                   |
+|             |               |                   |
+
+
+
+## **Hbase命令**
 
 （1）create 'user', 'base_info' 
 
@@ -34,4 +52,4 @@ disable 禁用user表，enable 启用user表
 
 （7）drop 'user'  删除user表
 
-#### 搭建本地伪分布式hbase环境
+## 搭建本地伪分布式hbase环境
