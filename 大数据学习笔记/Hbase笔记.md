@@ -26,6 +26,8 @@ Table & Column Family
 
 ## **Hbase命令**
 
+使用hbase命令工具：/hbase shell
+
 （1）create 'user', 'base_info' 
 
 创建user表，设置列族base_info
@@ -51,5 +53,13 @@ Table & Column Family
 disable 禁用user表，enable 启用user表
 
 （7）drop 'user'  删除user表
+
+（8）scan 'user'  扫秒user表所有的数据 
+
+## Hbase系统表
+
+hbase:meta
+
+hbase:namespace
 
 ## 搭建本地伪分布式hbase环境
