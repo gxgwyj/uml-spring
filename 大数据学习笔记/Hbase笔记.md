@@ -63,3 +63,22 @@ hbase:meta
 hbase:namespace
 
 ## 搭建本地伪分布式hbase环境
+
+修改*hbase-site.xml* 配置文件如下：
+
+```xml
+<property>
+  <name>hbase.cluster.distributed</name>
+  <value>true</value>
+</property>
+```
+
+配置hbase的hdfs地址，（数据将要存储到hdfs中）：
+
+```xml
+<property>
+  <name>hbase.rootdir</name>
+  <value>hdfs://localhost:8020/hbase</value>
+</property>
+```
+
