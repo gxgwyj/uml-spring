@@ -29,13 +29,23 @@ cp etc/hadoop/*.xml input
 
 #### hadoop伪分布式环境搭建
 
-第1步：修改hadoop配置文件etc/hadoop/core-site.xml:
+第1步：设置host文件 vi/etc/hosts,添加如下：
+
+```shell
+0.0.0.0     hadoop-domain
+```
+
+目的是为了 dfs的端口能通过其他机器访问
+
+
+
+第2步：修改hadoop配置文件etc/hadoop/core-site.xml:
 
 ```xml
 <configuration>
     <property>
         <name>fs.defaultFS</name>
-        <value>hdfs://localhost:9000</value>
+        <value>hdfs://hadoop-domain:9000</value>
     </property>
 </configuration>
 ```
@@ -68,3 +78,5 @@ sbin/start-dfs.sh
 http://192.168.202.129:50070/dfshealth.html#tab-overview
 
 控制台设置餐口文档  https://blog.csdn.net/u011331844/article/details/103917480
+
+File /hbase/.tmp/hbase.version could only be replicated to 0 nodes instead of minReplication (=1).  There are 1 datanode(s) running and 1 node(s) are excluded in this operation.

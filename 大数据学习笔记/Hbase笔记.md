@@ -82,3 +82,4 @@ hbase:namespace
 </property>
 ```
 
+注意：单机模式的hbase运行，所依赖的zookeeper、HMaster、HRegionServer都在同一个JVM进程中，数据也是存储在本地的/tmp/目录下面，在真实的生产环境中，数据肯定是存储在HDFS中
