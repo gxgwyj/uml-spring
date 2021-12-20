@@ -63,3 +63,23 @@ hbase:meta
 hbase:namespace
 
 ## 搭建本地伪分布式hbase环境
+
+修改*hbase-site.xml* 配置文件如下：
+
+```xml
+<property>
+  <name>hbase.cluster.distributed</name>
+  <value>true</value>
+</property>
+```
+
+配置hbase的hdfs地址，（数据将要存储到hdfs中）：
+
+```xml
+<property>
+  <name>hbase.rootdir</name>
+  <value>hdfs://localhost:8020/hbase</value>
+</property>
+```
+
+注意：单机模式的hbase运行，所依赖的zookeeper、HMaster、HRegionServer都在同一个JVM进程中，数据也是存储在本地的/tmp/目录下面，在真实的生产环境中，数据肯定是存储在HDFS中
