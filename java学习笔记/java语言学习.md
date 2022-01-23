@@ -26,19 +26,17 @@ Consumer：接口单个参数，没有返回值得函数接口
 
 （1）getClass：返回java运行时的Class对象
 
-（2）hashCode：返回对象的哈希码值
+（2）hashCode：返回对象的哈希码值。支持这种方法是因为HashMap提供的哈希表的好处。
 
 ​     一个对象在程序运行的过程中，多次调用hashCode方法返回的值总是相同的int值。
 
 ​     如果两个对象使用equals方法对比相等，那这个两个对象必然是hashCode也相等。
 
- （3）equals：比较两个对象的应用是否相等
+ （3）equals：比较两个对象的应用是否相等（**equals方法在非空对象引用上实现了一个等价关系**）
 
  （4）clone：复制并返回对象
 
- （5）notify：唤醒在此对象的【监视器】上【等待】的【单个线程】，如果有多个线程正在等待这个对象，那么其中一个线程将被唤醒（如果有多个线程争抢该对象上的锁，notify通知之后，只有其中的一个线程能获取对象的锁）线程通过调用一个等待（wait）方法来等待对象的监视器。
-
-​         被唤醒的线程仍然无法获取到锁，直到拥有对象锁的线程放弃了对象锁
+ （5）notify：唤醒在此对象的【监视器】上【等待】的【单个线程】，如果有多个线程正在等待这个对象，那么其中一个线程将被唤醒（如果有多个线程争抢该对象上的锁，notify通知之后，只有其中的一个线程能获取对象的锁）线程通过调用一个等待（wait）方法来等待对象的监视器，被唤醒的线程仍然无法获取到锁，直到拥有对象锁的线程放弃了对象锁（本质上就是发出个通知：你们准备开始抢锁吧，等我执行完就开始抢 ）。
 
 ​         notify方法只能由对象监视器的所有者线程调用，线程可以通过3种方式拥有对象的监视器：
 
@@ -58,7 +56,7 @@ Consumer：接口单个参数，没有返回值得函数接口
 
 ​            调用该方法的当前线程必须首先获得对象的监视器。
 
-​     等待总是应该在循环中发生
+​     等待总是应该在循环中发生，虚假唤醒操作：https://www.cnblogs.com/amberbar/p/13290672.html，如果使用if做判断，线程被唤醒后，会直接做下面的语句，形成一种虚假唤醒。
 
 ​     
 
@@ -70,8 +68,52 @@ Consumer：接口单个参数，没有返回值得函数接口
      }
 ```
 
-
+（5）finalize方法：当垃圾收集确定不再有对对象的引用时，**由垃圾收集器在对象上调用**。子类可以重写finalize方法以便在垃圾收集器调用的时候进行其他资源的释放，可以参照FileInputStream的finalize方法。
 
   **总结:**对象监视器，等待-通知-获取对象监视器-执行  模式来实现线程间通信
 
   每个锁对象都有两个队列，一个是就绪队列，一个是阻塞队列。就绪队列存储将要获取锁的线程，阻塞队列存储被阻塞的队列（例如线程被wait后就进入阻塞队列）。先进入阻塞队列，被唤醒后再进入就绪队列。
+
+### java-Thread类
+
+（1）sleep方法，线程停止执行，如果该线程拥有监视器，并不放弃监视器，依然拥有监视器。
+
+（2）interrupt方法 中断线程方法，该方法执行后，线程不一定马上停止，只是加了一个停止的标记位。
+
+（3）interrupted 方法：类的静态方法，测试**当前线程**是否已经被中断，调用该方法将清除线程的中断状态。
+
+（4）isInterrupted方法：测试**此线程**是否已被中断。线程的中断状态不受此方法的影响。由于线程在中断时不是活动的而忽略的线程中断将由这个返回false的方法反映出来。
+
+（5）join方法：等待线程执行结束（最多等待的时间可以设置），实现原理：外部线程调用执行线程的join（synchroized修饰），如果线程没有执行完成，则调用wait使得线程等待（释放锁），直到该线程运行结束,线程运行结束的时候会调用this.notifyAll(),则可继续运行代码，源码如下：
+
+所以java的作者不建议在Thread类的实例中手动的调用wait，notify，notifyAll等方法
+
+```java
+public final synchronized void join(long millis) -- 使用了 synchronized 关键字修饰
+    throws InterruptedException {
+        long base = System.currentTimeMillis();
+        long now = 0;
+
+        if (millis < 0) {
+            throw new IllegalArgumentException("timeout value is negative");
+        }
+
+        if (millis == 0) {
+            while (isAlive()) {
+                wait(0);// 调用该方法，会使得主线程停止，并且让出监视器，该线程执行结束的时候，会调用this.notifyAll，可使得任务继续运行。
+            }
+        } else {
+            while (isAlive()) {
+                long delay = millis - now;
+                if (delay <= 0) {
+                    break;
+                }
+                wait(delay);
+                now = System.currentTimeMillis() - base;
+            }
+        }
+    }
+```
+
+（6）java中线程状态的枚举类：java.lang.Thread.State
+
