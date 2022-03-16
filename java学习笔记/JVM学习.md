@@ -343,5 +343,115 @@ JVM 会保证在子类的初始化方法执行之前，父类的初始化方法�
 
 但是你自己写一个 ArrayList，放在应用目录里，tomcat 依然不会加载。它只是自定义的加载器顺序不同，但对于顶层来说，还是一样的。
 
-##### SPI机制
+##### SPI机制 和OSGI
 
+### 字节码指令
+
+java编译命令：
+
+```
+javac -g:lines -g:vars User.java -encoding utf-8 （强制生成 LineNumberTable 和 LocalVariableTable）
+```
+
+![1647083405523](./pic/javac编译命令.png)
+
+java运行命令：
+
+![](./pic/java运行命令.png)
+
+含有包的java类在运行时，需要在包结构外面运行，而且需要使用全限定的类名（实际上类文件所在的目录结构就是包结构）
+
+java字节文件查看指令：
+
+```
+javap -p -v UserBiz
+```
+
+class文件反编译内容：
+
+```java
+Classfile /D:/ideaPoject/javaBase/src/main/java/com/xyz/java/base/pojo/UserBiz.class
+  Last modified 2022-3-12; size 497 bytes
+  MD5 checksum 4be80f57f07fe4ca07000fc2046e24b6
+public class com.xyz.java.base.pojo.UserBiz
+  minor version: 0
+  major version: 52
+  flags: ACC_PUBLIC, ACC_SUPER
+Constant pool:
+   #1 = Methodref          #6.#20         // java/lang/Object."<init>":()V
+   #2 = Class              #21            // com/xyz/java/base/pojo/User
+   #3 = Methodref          #2.#20         // com/xyz/java/base/pojo/User."<init>":()V
+   #4 = Methodref          #2.#22         // com/xyz/java/base/pojo/User.eat:()V
+   #5 = Class              #23            // com/xyz/java/base/pojo/UserBiz
+   #6 = Class              #24            // java/lang/Object
+   #7 = Utf8               <init>
+   #8 = Utf8               ()V
+   #9 = Utf8               Code
+  #10 = Utf8               LineNumberTable
+  #11 = Utf8               LocalVariableTable
+  #12 = Utf8               this
+  #13 = Utf8               Lcom/xyz/java/base/pojo/UserBiz;
+  #14 = Utf8               main
+  #15 = Utf8               ([Ljava/lang/String;)V
+  #16 = Utf8               args
+  #17 = Utf8               [Ljava/lang/String;
+  #18 = Utf8               user
+  #19 = Utf8               Lcom/xyz/java/base/pojo/User;
+  #20 = NameAndType        #7:#8          // "<init>":()V
+  #21 = Utf8               com/xyz/java/base/pojo/User
+  #22 = NameAndType        #25:#8         // eat:()V
+  #23 = Utf8               com/xyz/java/base/pojo/UserBiz
+  #24 = Utf8               java/lang/Object
+  #25 = Utf8               eat
+{
+  public com.xyz.java.base.pojo.UserBiz();
+    descriptor: ()V
+    flags: ACC_PUBLIC
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0
+         1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+         4: return
+      LineNumberTable:
+        line 8: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0       5     0  this   Lcom/xyz/java/base/pojo/UserBiz;
+
+  public static void main(java.lang.String[]);
+    descriptor: ([Ljava/lang/String;)V
+    flags: ACC_PUBLIC, ACC_STATIC
+    Code:
+      stack=2, locals=2, args_size=1
+         0: new           #2                  // class com/xyz/java/base/pojo/User
+         3: dup
+         4: invokespecial #3                  // Method com/xyz/java/base/pojo/User."<init>":()V
+         7: astore_1
+         8: aload_1
+         9: invokevirtual #4                  // Method com/xyz/java/base/pojo/User.eat:()V
+        12: return
+      LineNumberTable:
+        line 10: 0
+        line 11: 8
+        line 12: 12
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      13     0  args   [Ljava/lang/String;
+            8       5     1  user   Lcom/xyz/java/base/pojo/User;
+}
+
+```
+
+java字节码执行指令：
+
+```
+invokespecial #1   --执行init（构造方法）
+```
+
+```
+invokevirtual #4   --执行一般对象的方法
+```
+
+字节码执行过程
+
+![](./pic/字节码指令运行.jpg)
