@@ -86,7 +86,7 @@ Consumer：接口单个参数，没有返回值得函数接口
 
 （2）interrupt方法 中断线程方法，该方法执行后，线程不一定马上停止，只是加了一个停止的标记位。
 
-（3）interrupted 方法：类的静态方法，测试**当前线程**是否已经被中断，调用该方法将清除线程的中断状态。
+（3）interrupted 方法：类的静态方法，测试**当前线程**是否已经被中断，调用该方法**将清除线程的中断状态**。
 
 （4）isInterrupted方法：测试**此线程**是否已被中断。线程的中断状态不受此方法的影响。由于线程在中断时不是活动的而忽略的线程中断将由这个返回false的方法反映出来。
 
@@ -104,22 +104,96 @@ public final synchronized void join(long millis) -- 使用了 synchronized 关�
             throw new IllegalArgumentException("timeout value is negative");
         }
 
-        if (millis == 0) {
-            while (isAlive()) {
+        if (millis == 0) {// 没有设置等待时间时，一直默认等待，知道线程完成后
+            while (isAlive()) {// 使用while的目的是为了防止“虚假唤醒”
                 wait(0);// 调用该方法，会使得主线程停止，并且让出监视器，该线程执行结束的时候，会调用this.notifyAll，可使得任务继续运行。
             }
         } else {
-            while (isAlive()) {
+            while (isAlive()) {// 如果线程还处于活动（未完成）状态
                 long delay = millis - now;
-                if (delay <= 0) {
+                if (delay <= 0) {// 如果计算出的时间小于0，直接跳出循环
                     break;
                 }
-                wait(delay);
-                now = System.currentTimeMillis() - base;
+                wait(delay);//等待时间
+                now = System.currentTimeMillis() - base; // 收到通知后已经运行的时间
             }
         }
     }
 ```
 
-（6）java中线程状态的枚举类：java.lang.Thread.State
+（6）yield方法：向调度器暗示当前线程愿意放弃当前对处理器的使用。线程调度器可以忽略这个提示。
 
+（7）start方法：启动线程，线程不一定马上运行。如果线程不是初始状态“NEW”，则无法启动线程。
+
+（8）isAlive方法：测试线程是否处于“活动”状态（何为活动状态？如果一个线程已经启动并且还没有死亡，那么它就是活的。）**判断线程是否运行结束可以使用该方法。**
+
+（9）java中线程状态的枚举类：java.lang.Thread.State
+
+**NEW**:尚未启动的线程的状态.
+
+**RUNNABLE**:可运行线程的线程状态。处于可运行状态的线程正在Java虚拟机中执行，但它可能正在等待来自操作系统的其他资源，比如处理器。
+
+**BLOCKED**:等待监视器锁的阻塞线程的线程状态(调用synchronized方法阻塞)。处于阻塞状态的线程正在等待监视器锁进入同步块/方法，或者在调用Object.wait后重新进入同步块/方法。
+
+**WAITING**：线程等待状态，调用以下方法会使线程进入等待状态：
+
+- Object.wait（未设置超时时间）
+- Thread.join（未设置超时时间）join方法，本质上也是调用了wait方法。
+- LockSupport.park
+
+**TIMED_WAITING**：线程有时间的等待，调用以下方法会使线程进入该状态：
+
+- Thread.sleep
+- Object.wait with timeout
+- Thread.join with timeout
+- LockSupport.parkNanos
+- LockSupport.parkUntil
+
+**TERMINATED**：线程终止状态
+
+### java-Future类
+
+Future表示**异步**计算的结果，作为java多线程并发包中重要的一个工具。提供了**检查计算结果**、**等待结果完成、**
+
+**获取计算结果**等方法，只有计算结果完成，才能调用**get**方法获取到结果，如果结果没有完成则会一直阻塞，直到有结果完成。可以调用**cancel**方法取消任务的执行，如果任务已经完成，则不能取消任务。
+
+示例用法：
+
+```java
+interface ArchiveSearcher { String search(String target); }
+ class App {
+   ExecutorService executor = ...
+   ArchiveSearcher searcher = ...
+   void showSearch(final String target)throws InterruptedException {
+     // 使用Future来获取异步任务执行的结果  
+     Future<String> future = executor.submit(new Callable<String>() {
+         public String call() {
+             return searcher.search(target);
+         }});
+     displayOtherThings(); // do other things while searching
+     try {
+       displayText(future.get()); // use future  使用get方法获取异步任务执行的结果
+     } catch (ExecutionException ex) { cleanup(); return; }
+   }
+ }
+```
+
+![](./pic/Future.png)
+
+该接口提供的能力：
+
+- cancel方法：试图取消此任务的执行，如果任务已经完成，这个尝试将会失败，如果这个任务还没有开始，则会停止任务，可以传出参数来决定如果任务正在运行，是否中断任务的执行。
+
+- isCancelled ：任务是否被取消，如果该任务在正常完成之前被取消，则返回true。
+
+- isDone：如果任务完成，返回true。完成可能是由于正常终止、异常或取消——在所有这些情况下，该方法都将返回true。
+
+- get：如果需要，则等待计算完成，然后检索其结果。（阻塞等待，直到有结果），会抛出3种异常
+
+  CancellationException -如果计算被取消
+
+  ExecutionException—如果计算抛出异常
+
+  InterruptedException—当前线程在等待时被中断 
+
+- get(long timeout,TimeUnit unit)：如果有必要，最多在给定时间内等待计算完成，然后检索其结果(如果可用)。
