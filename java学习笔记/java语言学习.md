@@ -197,3 +197,19 @@ interface ArchiveSearcher { String search(String target); }
   InterruptedException—当前线程在等待时被中断 
 
 - get(long timeout,TimeUnit unit)：如果有必要，最多在给定时间内等待计算完成，然后检索其结果(如果可用)。
+
+### java-FutureTask类
+
+Future接口的实现类，具有启动计算、取消计算、查询结算结果等方法，只有结算有结果，才能获取到，否则get方法将会阻塞，计算完成，则不能重启或者取消任务。
+
+FutureTask可以用来包装Callable或Runnable对象。因为FutureTask实现了Runnable，所以FutureTask可以提交给Executor执行。
+
+该类的继承关系如下：
+
+![](./pic/FutureTask.png)
+
+多线程编程中，一种是开启一个任务，**不需要知道它的执行结果，这种情况下使用Runable**，***一种情况是需要知道任务执行的结果，这个时候使用Callable来定义任务，使用Future来获取任务执行的结果***。
+
+### ThreadPoolExecutor类
+
+线程池执行器
