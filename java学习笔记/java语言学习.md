@@ -219,3 +219,12 @@ FutureTask可以用来包装Callable或Runnable对象。因为FutureTask实现�
 Executor接口：
 
 ![](./pic/Executor-接口.png)
+
+ExecutorService接口：
+
+![](./pic/ExecutorService.png)
+
+- void shutdown():
+- List<Runnable> shutdownNow():尝试停止所有正在执行的任务，停止等待任务的处理，并返回等待执行的任务列表。
+- submit:<T> Future<T> submit(Callable<T> task),提交一个有返回值的任务执行，并返回一个表示该任务没有结果的Future。Future的get方法将在任务成功完成时返回任务的结果。
+- <T> Future<T> submit(Runnable task,T result)：如果参数是Runnable（Runnable本身不具备返回值的能力），需要传入一个结果对象，result
