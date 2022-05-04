@@ -125,6 +125,8 @@ public final synchronized void join(long millis) -- 使用了 synchronized 关�
 
 （8）isAlive方法：测试线程是否处于“活动”状态（何为活动状态？如果一个线程已经启动并且还没有死亡，那么它就是活的。）**判断线程是否运行结束可以使用该方法。**
 
+（9） Thread.currentThread()：获取当前线程对象引用。
+
 （9）java中线程状态的枚举类：java.lang.Thread.State
 
 **NEW**:尚未启动的线程的状态.
@@ -198,7 +200,7 @@ interface ArchiveSearcher { String search(String target); }
 
 ### java-FutureTask类
 
-Future接口的实现类，具有启动计算、取消计算、查询结算结果等方法，只有结算有结果，才能获取到，否则get方法将会阻塞，计算完成，则不能重启或者取消任务。
+Future接口的基本实现类，具有启动计算、取消计算、查询结算结果等方法，只有结算有结果，才能获取到，否则get方法将会阻塞，计算完成，则不能重启或者取消任务。
 
 FutureTask可以用来包装Callable或Runnable对象。因为FutureTask实现了Runnable，所以FutureTask可以提交给Executor执行。
 
@@ -208,9 +210,19 @@ FutureTask可以用来包装Callable或Runnable对象。因为FutureTask实现�
 
 多线程编程中，一种是开启一个任务，**不需要知道它的执行结果，这种情况下使用Runable**，***一种情况是需要知道任务执行的结果，这个时候使用Callable来定义任务，使用Future来获取任务执行的结果***。
 
+详细方法如下：
+
+![](./pic/FutureTask-detail.png)
+
+（1）构造方法
+
+FutureTask(Callable<V> callable)  **可以传入Callable类型**
+
+FutureTask(Runnable runnable, V result) **也可以传入Runnable类型，并且传入一个result结果**
+
 ### ThreadPoolExecutor类
 
-线程池执行器
+**线程池执行器**
 
 先看下继承关系，如下图：
 
@@ -227,4 +239,6 @@ ExecutorService接口：
 - void shutdown():
 - List<Runnable> shutdownNow():尝试停止所有正在执行的任务，停止等待任务的处理，并返回等待执行的任务列表。
 - submit:<T> Future<T> submit(Callable<T> task),提交一个有返回值的任务执行，并返回一个表示该任务没有结果的Future。Future的get方法将在任务成功完成时返回任务的结果。
-- <T> Future<T> submit(Runnable task,T result)：如果参数是Runnable（Runnable本身不具备返回值的能力），需要传入一个结果对象，result
+- <T> Future<T> submit(Runnable task,T result)：如果参数是Runnable（Runnable本身不具备返回值的能力），需要传入一个结果对象，result。
+
+ThreadPoolExecutor注意点：默认的JDK实现中，即便是核心线程数，也只有在任务到达的时候创建（多少有点违背线程池的初衷：提前把资源创建好，任务到达的时候直接获取就是），但是可以提前调用prestartAllCoreThreads()方法来初始化线程任务，可以设置核心线程数的大小，最大线程数的大小，非核心线程数的存活时间（就好比一个公司里面一个团队，有核心成员，裁员的时候，只裁员非核心的）
