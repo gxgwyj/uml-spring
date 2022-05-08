@@ -241,4 +241,48 @@ ExecutorService接口：
 - submit:<T> Future<T> submit(Callable<T> task),提交一个有返回值的任务执行，并返回一个表示该任务没有结果的Future。Future的get方法将在任务成功完成时返回任务的结果。
 - <T> Future<T> submit(Runnable task,T result)：如果参数是Runnable（Runnable本身不具备返回值的能力），需要传入一个结果对象，result。
 
-ThreadPoolExecutor注意点：默认的JDK实现中，即便是核心线程数，也只有在任务到达的时候创建（多少有点违背线程池的初衷：提前把资源创建好，任务到达的时候直接获取就是），但是可以提前调用prestartAllCoreThreads()方法来初始化线程任务，可以设置核心线程数的大小，最大线程数的大小，非核心线程数的存活时间（就好比一个公司里面一个团队，有核心成员，裁员的时候，只裁员非核心的）
+ThreadPoolExecutor注意点：**默认的JDK实现中，即便是核心线程数，也只有在任务到达的时候创建（多少有点违背线程池的初衷：提前把资源创建好，任务到达的时候直接获取就是）**，但是可以提前调用**prestartAllCoreThreads()**方法来初始化线程任务，可以设置核心线程数的大小，最大线程数的大小，非核心线程数的存活时间（就好比一个公司里面一个团队，有核心成员，裁员的时候，只裁员非核心的）
+
+（1）线程池里面两个重要的参数：workerCount（正在运行的线程数）runState（运行状态），线程池的作者正是把这两个参数合并到一个整型变量中，来完成对整个线程池状态的控制。
+
+（2）线程池的生命周期状态：
+
+```
+RUNNING（运行中）：接受新任务并处理排队的任务
+SHUTDOWN（关停）：不接受新任务，但处理排队的任务
+STOP（停止）：不接受新任务，不处理排队的任务，并中断正在进行的任务
+TIDYING（整理）：所有任务已结束，工作线程数为0，线程转换到状态整理，是否运行terminated()钩子方法
+TERMINATED（终止）：terminated()钩子方法，已经被执行
+```
+
+状态之间的转换过程：
+
+```
+RUNNING -> SHUTDOWN：调用了shutdown()方法之后
+(RUNNING or SHUTDOWN) -> STOP：调用了shutdownNow()方法之后
+SHUTDOWN -> TIDYING：当队列（任务队列）和池（运行核心线程数）都为空时
+STOP -> TIDYING：当池为空时
+TIDYING -> TERMINATED：当terminated()钩子方法完成时
+```
+
+线程池各种状态代码：
+
+```java
+    private final AtomicInteger ctl = new AtomicInteger(ctlOf(RUNNING, 0));
+    private static final int COUNT_BITS = Integer.SIZE - 3; //32位减去3位，29位
+    private static final int CAPACITY   = (1 << COUNT_BITS) - 1; //容量
+
+    // runState is stored in the high-order bits（runState存储在高阶位中）
+    private static final int RUNNING    = -1 << COUNT_BITS;（java 位运算，向左移动29位，地位0补齐）
+    private static final int SHUTDOWN   =  0 << COUNT_BITS;
+    private static final int STOP       =  1 << COUNT_BITS;
+    private static final int TIDYING    =  2 << COUNT_BITS;
+    private static final int TERMINATED =  3 << COUNT_BITS;
+
+    // Packing and unpacking ctl（装箱和拆箱ctl）
+    // 使用workerCount 和 runState 组合成 ctl，或者从 ctl中获取到workerCount和runState
+    private static int runStateOf(int c)     { return c & ~CAPACITY; }
+    private static int workerCountOf(int c)  { return c & CAPACITY; }
+    private static int ctlOf(int rs, int wc) { return rs | wc; }
+```
+
