@@ -8,7 +8,23 @@ CLH锁：基于链表的可扩展、高性能、公平的**自旋锁**，它不�
 
 解释：
 
-等待队列是“CLH”锁队列的变体。CLH锁通常用于自旋锁。相反，我们使用它们来阻塞同步器，但是使用相同的基本策略，即在其节点的前身中保存关于线程的一些控制信息。每个节点中的状态字段跟踪线程是否应该阻塞。节点在其前任节点释放时发出信号。否则，队列的每个节点都充当一个特定的通知样式的监视器，其中包含一个等待线程。状态字段不控制线程是否被授予锁等。一个线程可能试图获取队列中的第一个线程。但领先并不能保证成功，它只会给你竞争的权利。因此，当前发布的竞争者线程可能需要重新等待。
+等待队列是“CLH”锁队列的变体。CLH锁通常用于**自旋锁**。相反，我们使用它们来阻塞同步器，但是使用相同的基本策略，即在其节点的前身中保存关于线程的一些控制信息。每个节点中的**状态**字段跟踪线程是否应该阻塞。节点在其前任节点释放时发出信号。否则，队列的每个节点都充当一个特定的通知样式的监视器，其中包含一个等待线程。状态字段不控制线程是否被授予锁等。一个线程可能试图获取队列中的第一个线程。但领先并不能保证成功，它只会给你竞争的权利。因此，当前发布的竞争者线程可能需要重新等待。
+
+![](./pic/Node.png)
+
+
+
+插入CLH队列只需要对“tail”进行一个原子操作(入队)，因此从未排队到排队有一个简单的原子操作。类似地，离队只涉及到更新“头部”（出队）。但是，节点需要做更多的工作来确定它们的后继节点是谁，部分是为了处理由于超时和中断而可能出现的取消。
+
+“prev”链接(在原始的CLH锁中不使用)，主要用于处理取消。如果一个节点被取消，它的后继节点(通常)被重新链接到一个未取消的前继节点。关于旋转锁类似力学的解释，请参阅Scott和Scherer在http://www.cs.rochester.edu/u/scott/synchronization上发表的论文
+
+我们还使用“下一个”链接来执行阻塞机制。每个节点的线程id都保存在其自己的节点中，因此前任节点通过遍历下一个链接来确定它是哪个线程，从而向下一个节点发出唤醒信号。确定后继节点必须避免与新排队的节点竞争，以设置其前一节点的“next”字段。这个问题在必要时可以通过在节点的后继节点为空时从原子更新的“tail”向后检查来解决。(或者换句话说，下一个链接是一种优化，因此我们通常不需要向后扫描。)
+
+消去为基本算法引入了一些保守性。因为我们必须轮询其他节点的取消，所以我们可能无法注意被取消的节点是在我们前面还是后面。解决这个问题的方法是在取消时总是解除继任者，允许他们稳定在新的前任上，除非我们可以确定一个未取消的前任谁将承担这个责任。
+
+CLH队列需要一个虚拟头节点来启动。但我们并不通过构造函数来创建，因为如果没有争论，那么努力就白费了。相反，在第一次争用时构造节点并设置头指针和尾指针。
+
+等待条件的线程使用相同的节点，但使用额外的链接。条件只需要链接简单(非并发)链接队列中的节点，因为它们只在独占时被访问。在等待时，节点被插入到条件队列中。信号时，节点为转移到主队列。status字段的一个特殊值用于标记节点所在的队列。
 
 ###### 成员变量
 
@@ -27,15 +43,15 @@ static final class Node {
         static final Node SHARED = new Node();
     	// 独占模式
         static final Node EXCLUSIVE = null;
-    	// 取消
+    	// 表示线程已取消
         static final int CANCELLED =  1;
-        // 停止
+        // 表示后继线程需要解除驻留
         static final int SIGNAL    = -1;
-        // 条件等待
+        // 表示线程处于等待状态
         static final int CONDITION = -2;
-       	// 条件传播
+       	// 表示下一个被请求的应该无条件地传播
         static final int PROPAGATE = -3;
-		// 节点状态
+    
         volatile int waitStatus;
 
         volatile Node prev;
@@ -158,4 +174,52 @@ private void unparkSuccessor(Node node) {
             LockSupport.unpark(s.thread);
     }
 ```
+
+![](./pic/AbstractQueuedSynchronizer-Node.png)
+
+自旋锁前驱队列：https://blog.csdn.net/qq_37425816/article/details/105349516
+
+### AbstractOwnableSynchronizer
+
+定义：抽象类，一个线程独占的同步器，该类提供了创建锁和相关同步器的基础，这些同步器可能需要所有权的概念，AbstractOwnableSynchronizer类本身不管理或使用此信息，但是，子类和工具可以使用适当维护的值来帮助控制和监视访问并提供诊断。
+
+
+
+![](./pic/AbstractOwnableSynchronizer.png)
+
+### AbstractQueuedSynchronizer
+
+定义：也是一个抽象类，无法实例化对象，提供了一个**框架**来实现**阻塞锁**和**依赖于先进先出(FIFO)等待队列**的相关同步器(信号量、事件等)，这个类被设计为大多数依赖于单个原子整数值来表示状态的同步器的有用基础。【该类只是提供了一套实现锁的框架，并没有】，需要子类自行实现改变状态的方法。
+
+子类应该定义为**非公共的内部助手类**，用于实现其外围类的同步属性。类AbstractQueuedSynchronizer不实现任何同步接口。相反，它定义了诸如acquireinterruptible (int)这样的方法，具体锁和相关同步器可以适当地调用这些方法来实现它们的公共方法。
+
+该类支持默认**独占模式**和**共享模式**中的一种或两种，当以独占模式获取时，其他线程尝试获取无法成功，多个线程获取共享模式可能(但不一定)成功，在不同模式下等待的线程共享相同的FIFO队列，通常，实现子类只支持其中一种模式，但两者都可以发挥作用，例如在ReadWriteLock【读写锁】中。
+
+这个类定义了一个嵌套的AbstractQueuedSynchronizer.ConditionObject,可以被支持【独占模式】的子类用作条件实现的条件对象类，isheldexcluvely()方法报告同步是否被相对于当前线程独占。
+
+要使用这个类作为同步器的基础，可以通过检查和/或修改同步状态来重新定义以下方法：
+
+- tryAcquire(int)
+- tryRelease(int)
+- tryAcquireShared(int)
+- tryReleaseShared(int)
+- isHeldExclusively()
+
+默认情况下，这些方法都会抛出UnsupportedOperationException,这些方法的实现必须是内部线程安全的。
+
+即使这个类基于内部FIFO队列，它也不会自动执行FIFO获取策略。独占同步的核心形式为:
+
+```
+Acquire:
+     while (!tryAcquire(arg)) {
+        enqueue thread if it is not already queued;
+        possibly block current thread;
+     }
+
+ Release:
+     if (tryRelease(arg))
+        unblock the first queued thread;
+```
+
+### AbstractQueuedSynchronizer.Node
 
