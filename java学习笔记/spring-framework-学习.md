@@ -48,13 +48,15 @@ Bean工厂实现应该尽可能地支持标准的Bean生命周期接口。完整
 
 BeanFactory接口的扩展：
 
-# 1、spring 中提供的两个最基本的接口 BeanFactory 和 ApplicationContent
+# spring 中提供的两个最基本的接口 BeanFactory 和 ApplicationContent
 
-他们之间的区别：BeanFactiory是实现IoC的基本形式，而 各种ApplicationContent是实现IoC的高级形式。
+他们之间的区别：BeanFactiory是实现IoC的基本形式，而 各种ApplicationContent是实现IoC的高级形式
 
 2、启动spring的类和方法：
 
 AbstractApplicationContext  ->  refresh()
+
+**refresh方法是非常重要的一个方法，spring容器的启动入口**
 
 2.1、启动步骤
 
@@ -173,3 +175,13 @@ PropertyPlaceholderConfigurer 类中的resolvePlaceholder方法
 4、<context:annotation-config /> spring容器开启自动注解
 
 解释该注解的类：AnnotationConfigBeanDefinitionParser
+
+## ApplicationContext
+
+先看一张普通文件Spring运行上下文的继承图：
+
+![](./pic/FileSystemXmlApplicationContext.png)
+
+## DefaultListableBeanFactory
+
+spring容器产生bean的最终载体
