@@ -48,6 +48,16 @@ Bean工厂实现应该尽可能地支持标准的Bean生命周期接口。完整
 
 BeanFactory接口的扩展：
 
+
+
+## DefaultNamespaceHandlerResolver
+
+NamespaceHandlerResolver接口的默认实现。根据映射文件中包含的映射将名称空间uri解析为实现类。默认情况下，该实现在**META-INF/spring**中查找映射文件。但是可以使用DefaultNamespaceHandlerResolver(ClassLoader, String)构造函数来更改文件路径。
+
+文件中存储，XML中每个命名空间的处理类，如下：
+
+![](./pic/spring-handlers.png)
+
 # spring 中提供的两个最基本的接口 BeanFactory 和 ApplicationContent
 
 他们之间的区别：BeanFactiory是实现IoC的基本形式，而 各种ApplicationContent是实现IoC的高级形式
@@ -60,31 +70,15 @@ AbstractApplicationContext  ->  refresh()
 
 2.1、启动步骤
 
-AbstractRefreshableApplicationContext ->  refreshBeanFactory()  {
+AbstractRefreshableApplicationContext ->  refreshBeanFactory();
 
-创建beanFactory（DefaultListableBeanFactory）
+AbstractRefreshableApplicationContext -> loadBeanDefinitions(DefaultListableBeanFactory  beanFactory);//是个抽象方法，需要子类来实现
 
-}
+AbstractXmlApplicationContext  ->   loadBeanDefinitions(DefaultListableBeanFactory  beanFactory);//具体的实现（实现了父类的方法）
 
-AbstractRefreshableApplicationContext -> loadBeanDefinitions(beanFactory){
+AbstractBeanDefinitionReader ->  loadBeanDefinitions(String... locations);//ApplicationContext中定义了BeanDefinitionReader，用于读取元数据（bean定义数据）
 
-加载xml定义的bean
-
-}
-
-AbstractXmlApplicationContext  ->   loadBeanDefinitions(DefaultListableBeanFactory  beanFactory){
-
-加载xml定义的bean
-
-}
-
-AbstractBeanDefinitionReader ->  loadBeanDefinitions(String... locations){
-
-}
-
-XmlBeanDefinitionReader ->  loadBeanDefinitions(EncodedResource encodedResource){
-
-}
+XmlBeanDefinitionReader ->  loadBeanDefinitions(EncodedResource encodedResource);
 
 //读取xml中的内容
 
@@ -185,3 +179,15 @@ PropertyPlaceholderConfigurer 类中的resolvePlaceholder方法
 ## DefaultListableBeanFactory
 
 spring容器产生bean的最终载体
+
+ApplicationContext中包含了BeanFactory实例，如下：
+
+![](./pic/ApplicationContext-BeanFactory.png)
+
+# spring-AOP
+
+软件程序设计中模块化的思想。
+
+传统的模块化：封装模块，需要的地方显示的调用。
+
+非模块化调用：（1）Proxy代理对象（2）拦截器（3）字节码翻译技术
