@@ -1,6 +1,6 @@
 ### 一、定义：
 
-抽象队列监视器
+抽象队列监视器（抽象同步器）
 
 CLH锁：基于链表的可扩展、高性能、公平的**自旋锁**，它不断轮询前驱的状态，如果发现前驱释放了锁就结束自旋
 
@@ -218,10 +218,16 @@ private void unparkSuccessor(Node node) {
 要将此类用作同步器的基础，请酌情重新定义以下方法。通过getState()方法获取状态，通过同步的方式修改状态，使用setState(int)或者compareAndSetState(int, int)方法：
 
 - tryAcquire(int)
+
 - tryRelease(int)
+
 - tryAcquireShared(int)
+
 - tryReleaseShared(int)
+
 - isHeldExclusively()
+
+  以上这些方法，都需要使用者自己实现。
 
 默认情况下，这些方法都会抛出UnsupportedOperationException,这些方法的实现必须是内部线程安全的。
 
@@ -240,4 +246,3 @@ Acquire:
 ```
 
 ### AbstractQueuedSynchronizer.Node
-
