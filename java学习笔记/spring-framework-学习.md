@@ -12,13 +12,15 @@ DI：使用框架容器来组织各个模块的依赖关系
 
 ![](./pic/ApplicationContext接口.png)
 
+![](./pic/Application继承关系图.png)
+
 定义:**为应用程序提供配置的中央接口。在应用程序运行时，这是只读的，但如果实现支持，可能会重新加载**
 
 由上图可以知道ApplicationContext【应用程序上下文】接口继承了好多基础接口，官网给出ApplicationContext接口提供的能力如下：
 
 - 用于访问应用程序组件的Bean工厂方法。从**ListableBeanFactory**继承【组件访问功能】
 - 以通用方式加载文件资源的能力。继承自**ResourceLoader**接口【组件加载功能】。
-- 将事件发布到已注册侦听器的能力。继承自**ApplicationEventPublisher**接口【事件发布功能】。
+- 将事件发布到已注册监听器的能力。继承自**ApplicationEventPublisher**接口【事件发布功能】。
 - 解析消息的能力，支持国际化。继承自**MessageSource**接口【消息解析功能】。
 - 上下文继承能力，如一个单独的父上下文可以被整个web应用程序使用，而每个servlet都有自己独立于任何其他servlet的子上下文【上下文继承功能】
 
@@ -54,6 +56,10 @@ BeanFactory接口的扩展：
 
 NamespaceHandlerResolver接口的默认实现。根据映射文件中包含的映射将名称空间uri解析为实现类。默认情况下，该实现在**META-INF/spring**中查找映射文件。但是可以使用DefaultNamespaceHandlerResolver(ClassLoader, String)构造函数来更改文件路径。
 
+根据命名空间名称获取对应的解析类，方法：org.springframework.beans.factory.xml.NamespaceHandlerResolver#resolve，最终返回NamespaceHandler
+
+
+
 文件中存储，XML中每个命名空间的处理类，如下：
 
 ![](./pic/spring-handlers.png)
@@ -82,69 +88,43 @@ XmlBeanDefinitionReader ->  loadBeanDefinitions(EncodedResource encodedResource)
 
 //读取xml中的内容
 
-XmlBeanDefinitionReader ->  doLoadBeanDefinitions(InputSource inputSource, Resource resource)
-
-{
-
-}
+XmlBeanDefinitionReader ->  doLoadBeanDefinitions(InputSource inputSource, Resource resource);
 
 //注册bean
 
-XmlBeanDefinitionReader ->  doLoadBeanDefinitions(InputSource inputSource, Resource resource)
-
-{
-
-}
+XmlBeanDefinitionReader ->  doLoadBeanDefinitions(InputSource inputSource, Resource resource);
 
 //注册bean
 
-DefaultBeanDefinitionDocumentReader->  registerBeanDefinitions(Document doc, XmlReaderContext readerContext)
-
-{
-
-}
-
-
+DefaultBeanDefinitionDocumentReader->  registerBeanDefinitions(Document doc, XmlReaderContext readerContext);
 
 //注册bean
 
-DefaultBeanDefinitionDocumentReader-> doRegisterBeanDefinitions(Element root){
-
-}
+DefaultBeanDefinitionDocumentReader-> doRegisterBeanDefinitions(Element root);
 
 //解析bean定义
 
-DefaultBeanDefinitionDocumentReader-> parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate){
-
-}
+DefaultBeanDefinitionDocumentReader-> parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate);
 
 //解析bean定义的过程
 
-DefaultBeanDefinitionDocumentReader-> processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate){
-
-}
+DefaultBeanDefinitionDocumentReader-> processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate);
 
 //注册beanDefine
 
-BeanDefinitionReaderUtils  ->  registerBeanDefinition(BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry){
-
-}
+BeanDefinitionReaderUtils  ->  registerBeanDefinition(BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry);
 
 //将beanDefine放到beanDefinitionMap中
 
-DefaultListableBeanFactory ->   registerBeanDefinition(String beanName, BeanDefinition beanDefinition){
-
-}
+DefaultListableBeanFactory ->   registerBeanDefinition(String beanName, BeanDefinition beanDefinition);
 
 //解析Bean最终要的方法
 
-BeanDefinitionParserDelegate  -> parseBeanDefinitionElement  将xml中的bean定义转换成BeanDefinition
+BeanDefinitionParserDelegate  -> parseBeanDefinitionElement()  将xml中的bean定义转换成BeanDefinition
 
 **2、IoC容器的依赖注入**
 
 ​    依赖注入的过程是用户第一次向IoC容器索要Bean时触发的，当然也可以通过BeanDefinition的lazy-init 属性来让容器完成对Bean的预实例化。
-
-
 
 2.1 初始化所有的单例bean DefaultListableBeanFactory类中的 preInstantiateSingletons方法预初始化所有的单例bean
 
@@ -184,6 +164,12 @@ ApplicationContext中包含了BeanFactory实例，如下：
 
 ![](./pic/ApplicationContext-BeanFactory.png)
 
+## BeanFactoryPostProcessor
+
+spring bean工厂的后置处理器，允许自定义修改应用程序上下文的bean定义（bean元数据定义），调整上下文底层bean工厂的bean属性值，spring容器可以在bean定义中自动检测BeanFactoryPostProcessor ，并提前创建它们。PropertyResourceConfigurer、PropertyOverrideConfigurer 都是具体的实现。
+
+在标准初始化之后修改应用程序上下文的内部bean工厂。所有bean定义都已加载，但还没有实例化任何bean。这就允许覆盖或添加属性，甚至可以向预先初始化bean添加属性。
+
 # spring-AOP
 
 软件程序设计中模块化的思想。
@@ -191,3 +177,38 @@ ApplicationContext中包含了BeanFactory实例，如下：
 传统的模块化：封装模块，需要的地方显示的调用。
 
 非模块化调用：（1）Proxy代理对象（2）拦截器（3）字节码翻译技术
+
+### spring-AOP相关的接口
+
+#### Advice通知
+
+Advice接口：Spring定义的AOP通知类接口
+
+BeforeAdvice接口：AOP调用前通知接口
+
+AfterAdvice接口：AOP调用后通知接口
+
+ThrowsAdvice接口：目标方法调用异常时通知接口
+
+#### Pointcut切点
+
+**Pointcut切点**：决定Advice通知应作用于哪个点，通过Pointcut切点来定义需要增强的方法的集合（Advice通知作用，那么Pointcut则决定了这些通知作用作用域那些方法，圈定范围），常见的方式有：明确指定方法名称，使用正则表达式等等。
+
+![](./pic/Pointcut.png)
+
+由上图可知，Pointcut接口放回MethodMatcher对象，使用MethodMatcher对象来判断方法是否是切点，是否需要做通知
+
+JdkRegexpMethodPointcut:java正则表达式切点实现类，根据正则表达式匹配需要走通知的方法。
+
+NameMatchMethodPointcut:使用方法名来匹配的切点实现类。
+
+```java
+protected boolean matches(String pattern, int patternIndex) {
+		Matcher matcher = this.compiledPatterns[patternIndex].matcher(pattern);
+		return matcher.matches();
+	}
+```
+
+#### Advisor通知器
+
+advisor把advice和pointcut结合起来。
