@@ -48,21 +48,7 @@ Bean工厂实现应该尽可能地支持标准的Bean生命周期接口。完整
 
 ### ListableBeanFactory
 
-BeanFactory接口的扩展：
-
-
-
-## DefaultNamespaceHandlerResolver
-
-NamespaceHandlerResolver接口的默认实现。根据映射文件中包含的映射将名称空间uri解析为实现类。默认情况下，该实现在**META-INF/spring**中查找映射文件。但是可以使用DefaultNamespaceHandlerResolver(ClassLoader, String)构造函数来更改文件路径。
-
-根据命名空间名称获取对应的解析类，方法：org.springframework.beans.factory.xml.NamespaceHandlerResolver#resolve，最终返回NamespaceHandler
-
-
-
-文件中存储，XML中每个命名空间的处理类，如下：
-
-![](./pic/spring-handlers.png)
+BeanFactory接口的扩展
 
 # spring 中提供的两个最基本的接口 BeanFactory 和 ApplicationContent
 
@@ -163,6 +149,87 @@ spring容器产生bean的最终载体
 ApplicationContext中包含了BeanFactory实例，如下：
 
 ![](./pic/ApplicationContext-BeanFactory.png)
+
+## BeanDefinitionRegistry
+
+为保存bean定义的注册中心提供接口，例如RootBeanDefinition和ChildBeanDefinition实例，通常由内部使用AbstractBeanDefinition层次结构的beanfactory实现。
+
+这是Spring bean工厂包中封装bean定义注册的唯一接口。标准的BeanFactory接口只包括对完全配置的工厂实例的访问。
+
+Spring bean定义的读者希望处理这个接口的实现。Spring核心中已知的实现者是**DefaultListableBeanFactory**和**GenericApplicationContext**。
+
+## BeanDefinition
+
+![](./pic/spring-GenericBeanDefinition.png)
+
+## bean解析流程
+
+BeanDefinitionParserDelegate：用于解析XML bean定义的有状态委托类。供主解析器和任何扩展BeanDefinitionParsers或BeanDefinitionDecorators使用。
+
+主要解析<bean>标签以及其他如自定义xml标签。
+
+#### 解析bean标签
+
+```java
+调用：org.springframework.beans.factory.xml.BeanDefinitionParserDelegate#parseBeanDefinitionElement(org.w3c.dom.Element)
+返回：
+class BeanDefinitionHolder{
+
+    // bean 定义数据
+    private final BeanDefinition beanDefinition;
+    
+    // bean 名称
+	private final String beanName;
+
+	// bean 别名
+	private final String[] aliases;  
+}
+```
+
+#### 解析自定义标签
+
+```xml
+<context:property-placeholder location="classpath:gaoxugang/conf/test.proerties"></context:property-placeholder>
+```
+
+看自定义标签之前先看下解析类结构
+
+```java
+NamespaceHandlerResolver：[Resolver]用于定位命名空间的解析类，如
+定位“http://www.springframework.org/schema/context”的处理器为ContextNamespaceHandler
+DefaultNamespaceHandlerResolver：NamespaceHandlerResolver接口的默认实现，所有的命名空间处理器都在类路径的META-INF/spring.handlers文件中存储，内容如下：
+http\://www.springframework.org/schema/context=org.springframework.context.config.ContextNamespaceHandler
+http\://www.springframework.org/schema/jee=org.springframework.ejb.config.JeeNamespaceHandler
+http\://www.springframework.org/schema/lang=org.springframework.scripting.config.LangNamespaceHandler
+http\://www.springframework.org/schema/task=org.springframework.scheduling.config.TaskNamespaceHandler
+http\://www.springframework.org/schema/cache=org.springframework.cache.config.CacheNamespaceHandler
+DefaultNamespaceHandlerResolver
+NamespaceHandlerResolver接口的默认实现。根据映射文件中包含的映射将名称空间uri解析为实现类。默认情况下，该实现在/META-INF/spring/中查找映射文件。但是可以使用DefaultNamespaceHandlerResolver(ClassLoader, String)构造函数来更改文件路径。
+
+根据命名空间名称获取对应的解析类，方法：NamespaceHandlerResolver#resolve，最终返回NamespaceHand
+```
+
+```java
+NamespaceHandler：命名空间处理器，有多个实现，默认实现为 NamespaceHandlerSupport
+具体的实现：ContextNamespaceHandler
+每一个NamespaceHandler中又有多个Parser，如ContextNamespaceHandler中有
+PropertyPlaceholderBeanDefinitionParser——>"property-placeholder"
+PropertyOverrideBeanDefinitionParser-->"property-override"
+```
+
+```java
+BeanDefinitionParser:bean装换器
+有很多实现，如PropertyPlaceholderBeanDefinitionParser、PropertyOverrideBeanDefinitionParser
+
+PropertyPlaceholderBeanDefinitionParser解析调用
+（1）AbstractBeanDefinitionParser#parse
+（2）AbstractSingleBeanDefinitionParser#parseInternal
+（3）PropertyPlaceholderBeanDefinitionParser#getBeanClass//获取bean的class属性
+（4）PropertyPlaceholderBeanDefinitionParser#doParse// 真正解析property-placeholder的方法
+（5）AbstractPropertyLoadingBeanDefinitionParser#doParse// 先调父类的解析方法，解析如location属性
+(6)PropertyPlaceholderHelper#replacePlaceholders// 处理站位符，${}字符等
+
+```
 
 ## BeanFactoryPostProcessor
 
