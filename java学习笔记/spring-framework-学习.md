@@ -6,9 +6,33 @@ IoC：使用框架容器来控制对象的生产
 
 DI：使用框架容器来组织各个模块的依赖关系
 
-以上体现了一种：通过引入中间件，解耦系统中各个模块依赖关系的思维。
+**以上体现了一种编程：通过引入中间件，解耦系统中各个模块依赖关系，使得各个模块松耦合。**
 
-## ApplicationContext接口
+spring 中提供的两个最基本的接口 BeanFactory 和 ApplicationContent。他们之间的区别：BeanFactiory是实现IoC的基本形式，而 各种ApplicationContent是实现IoC的高级形式。
+
+## ApplicationContext
+
+ApplicationContext中包含了BeanFactory，详情看代码
+
+```java
+public abstract class AbstractRefreshableApplicationContext extends AbstractApplicationContext {
+
+	@Nullable
+	private Boolean allowBeanDefinitionOverriding;
+
+	@Nullable
+	private Boolean allowCircularReferences;
+
+	/** Bean factory for this context. */
+	@Nullable
+	private DefaultListableBeanFactory beanFactory;
+
+	/** Synchronization monitor for the internal BeanFactory. */
+	private final Object beanFactoryMonitor = new Object();
+}
+```
+
+
 
 ![](./pic/ApplicationContext接口.png)
 
@@ -49,10 +73,6 @@ Bean工厂实现应该尽可能地支持标准的Bean生命周期接口。完整
 ### ListableBeanFactory
 
 BeanFactory接口的扩展
-
-# spring 中提供的两个最基本的接口 BeanFactory 和 ApplicationContent
-
-他们之间的区别：BeanFactiory是实现IoC的基本形式，而 各种ApplicationContent是实现IoC的高级形式
 
 2、启动spring的类和方法：
 
@@ -163,6 +183,8 @@ Spring bean定义的读者希望处理这个接口的实现。Spring核心中已
 ![](./pic/spring-GenericBeanDefinition.png)
 
 ## bean解析流程
+
+spring 解析bean定义的阶段，只是将XML文件中的定义元数据，原封不动的转成Java的BeanDefinition，并无做任何初始化的操作。
 
 BeanDefinitionParserDelegate：用于解析XML bean定义的有状态委托类。供主解析器和任何扩展BeanDefinitionParsers或BeanDefinitionDecorators使用。
 
