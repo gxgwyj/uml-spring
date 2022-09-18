@@ -259,6 +259,33 @@ spring bean工厂的后置处理器，允许自定义修改应用程序上下文
 
 在标准初始化之后修改应用程序上下文的内部bean工厂。所有bean定义都已加载，但还没有实例化任何bean。这就允许覆盖或添加属性，甚至可以向预先初始化bean添加属性。
 
+例如通过配置文件定义bean属性的值，通过xml中的占位符（${}）进行属性的注入。
+
+spring 配置文件
+
+```xml
+<!--属性占位符-->
+	<context:property-placeholder location="classpath:gaoxugang/conf/test.proerties"/>
+
+	<bean class="gaoxugang.pojo.MyDataSource">
+		<property name="driverClassName" value="${jdbc.driverClassName}"/>
+		<property name="url" value="${jdbc.url}"/>
+		<property name="username" value="${jdbc.username}"/>
+		<property name="password" value="${jdbc.password}"/>
+	</bean>
+```
+
+属性配置文件：classpath:gaoxugang/conf/test.proerties
+
+```java
+jdbc.driverClassName=org.hsqldb.jdbcDriver
+jdbc.url=jdbc:hsqldb:hsql://production:9002
+jdbc.username=sa
+jdbc.password=root
+```
+
+最终执行的类是PropertySourcesPlaceholderConfigurer，该类实现了BeanFactoryPostProcessor接口，会在bean定义解析完成之后，spring容器会回调postProcessBeanFactory方法，来完成属性值得替换，具体的实现请看org.springframework.context.support.PropertySourcesPlaceholderConfigurer#postProcessBeanFactory
+
 # spring-AOP
 
 软件程序设计中模块化的思想。
