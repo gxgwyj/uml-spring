@@ -26,6 +26,80 @@ CLH队列需要一个虚拟头节点来启动。但我们并不通过构造函�
 
 等待条件的线程使用相同的节点，但使用额外的链接。条件只需要链接简单(非并发)链接队列中的节点，因为它们只在独占时被访问。在等待时，节点被插入到条件队列中。信号时，节点为转移到主队列。status字段的一个特殊值用于标记节点所在的队列。
 
+
+
+自旋锁前驱队列：https://blog.csdn.net/qq_37425816/article/details/105349516
+
+### AbstractOwnableSynchronizer
+
+定义：抽象类，一个线程独占的同步器，该类提供了创建锁和相关同步器的基础，这些同步器可能需要所有权的概念，AbstractOwnableSynchronizer类本身不管理或使用此信息，但是，子类和工具可以使用适当维护的值来帮助控制和监视访问并提供诊断。
+
+
+
+![](./pic/AbstractOwnableSynchronizer.png)
+
+### AbstractQueuedSynchronizer
+
+![](./pic/AQS.png)
+
+定义：也是一个抽象类，无法实例化对象，提供了一个**框架**来实现**阻塞锁**和**依赖于先进先出(FIFO)等待队列**的相关同步器(信号量、事件等)，这个类被设计为大多数依赖于单个原子整数值来表示状态的同步器的有用的基础类。子类必须定义改变这种状态的受保护方法，这些方法定义了这种状态在获取或释放对象时的含义。【该类只是提供了一套实现锁的框架】，需要子类自行实现改变状态的方法。
+
+- getState()方法
+- setState(int)方法
+- compareAndSetState(int,int)方法
+
+以上这段话总结：
+
+- AQS是一个抽象的**同步器**框架
+- 使用整数值来标识**同步器**的状态
+- 需要子类自行实现改变**同步器**状态的方法
+
+子类（AbstractQueuedSynchronizer的子类）应该定义为**非公共的内部助手类**，用于实现其外围类的同步属性。类AbstractQueuedSynchronizer不实现任何同步接口。相反，它定义了诸如acquireinterruptible (int)这样的方法，具体锁和相关同步器可以适当地调用这些方法来实现它们的公共方法。
+
+以上这段话总结：
+
+- AQS的的实现类应该定义为一个工具类的私有内部类,作为这个类的同步器，参照java.util.concurrent.locks.ReentrantLock.Sync的实现
+
+该类支持默认**独占模式**和**共享模式**中的一种或两种，当以独占模式获取时，其他线程尝试获取无法成功，多个线程获取共享模式可能(但不一定)成功，在不同模式下等待的线程共享相同的FIFO队列，通常，实现子类只支持其中一种模式，但两者都可以发挥作用，例如在ReadWriteLock【读写锁】中。
+
+以上这段话总结：
+
+- AQS同步器可支持独占模式和共享模式
+
+这个类定义了一个嵌套的AbstractQueuedSynchronizer.ConditionObject,可以被支持【独占模式】的子类用作条件实现的条件对象类，isheldexcluvely()方法报告同步是否被相对于当前线程独占。
+
+要将此类用作同步器的基础，请酌情重新定义以下方法。通过getState()方法获取状态，通过同步的方式修改状态，使用setState(int)或者compareAndSetState(int, int)方法：
+
+- tryAcquire(int)
+
+- tryRelease(int)
+
+- tryAcquireShared(int)
+
+- tryReleaseShared(int)
+
+- isHeldExclusively()
+
+  以上这些方法，都需要使用者自己实现。
+
+默认情况下，这些方法都会抛出UnsupportedOperationException,这些方法的实现必须是内部线程安全的。
+
+即使这个类基于内部FIFO队列，它也不会自动执行FIFO获取策略。独占同步的核心形式为:
+
+```
+Acquire:
+     while (!tryAcquire(arg)) {
+        enqueue thread if it is not already queued;
+        possibly block current thread;
+     }
+
+ Release:
+     if (tryRelease(arg))
+        unblock the first queued thread;
+```
+
+### AbstractQueuedSynchronizer.Node
+
 ###### 内部类(等待队列数据模型)
 
 ```java
@@ -148,7 +222,6 @@ protected final boolean compareAndSetState(int expect, int update) {
 ###### 唤起当前节点的后继节点
 
 ```java
-
 private void unparkSuccessor(Node node) {
         int ws = node.waitStatus;
         if (ws < 0)
@@ -168,74 +241,3 @@ private void unparkSuccessor(Node node) {
 
 ![](./pic/AbstractQueuedSynchronizer-Node.png)
 
-自旋锁前驱队列：https://blog.csdn.net/qq_37425816/article/details/105349516
-
-### AbstractOwnableSynchronizer
-
-定义：抽象类，一个线程独占的同步器，该类提供了创建锁和相关同步器的基础，这些同步器可能需要所有权的概念，AbstractOwnableSynchronizer类本身不管理或使用此信息，但是，子类和工具可以使用适当维护的值来帮助控制和监视访问并提供诊断。
-
-
-
-![](./pic/AbstractOwnableSynchronizer.png)
-
-### AbstractQueuedSynchronizer
-
-![](./pic/AQS.png)
-
-定义：也是一个抽象类，无法实例化对象，提供了一个**框架**来实现**阻塞锁**和**依赖于先进先出(FIFO)等待队列**的相关同步器(信号量、事件等)，这个类被设计为大多数依赖于单个原子整数值来表示状态的同步器的有用的基础类。子类必须定义改变这种状态的受保护方法，这些方法定义了这种状态在获取或释放对象时的含义。【该类只是提供了一套实现锁的框架】，需要子类自行实现改变状态的方法。
-
-- getState()方法
-- setState(int)方法
-- compareAndSetState(int,int)方法
-
-以上这段话总结：
-
-- AQS是一个抽象的**同步器**框架
-- 使用整数值来标识**同步器**的状态
-- 需要子类自行实现改变**同步器**状态的方法
-
-子类（AbstractQueuedSynchronizer的子类）应该定义为**非公共的内部助手类**，用于实现其外围类的同步属性。类AbstractQueuedSynchronizer不实现任何同步接口。相反，它定义了诸如acquireinterruptible (int)这样的方法，具体锁和相关同步器可以适当地调用这些方法来实现它们的公共方法。
-
-以上这段话总结：
-
-- AQS的的实现类应该定义为一个工具类的私有内部类,作为这个类的同步器，参照java.util.concurrent.locks.ReentrantLock.Sync的实现
-
-该类支持默认**独占模式**和**共享模式**中的一种或两种，当以独占模式获取时，其他线程尝试获取无法成功，多个线程获取共享模式可能(但不一定)成功，在不同模式下等待的线程共享相同的FIFO队列，通常，实现子类只支持其中一种模式，但两者都可以发挥作用，例如在ReadWriteLock【读写锁】中。
-
-以上这段话总结：
-
-- AQS同步器可支持独占模式和共享模式
-
-这个类定义了一个嵌套的AbstractQueuedSynchronizer.ConditionObject,可以被支持【独占模式】的子类用作条件实现的条件对象类，isheldexcluvely()方法报告同步是否被相对于当前线程独占。
-
-要将此类用作同步器的基础，请酌情重新定义以下方法。通过getState()方法获取状态，通过同步的方式修改状态，使用setState(int)或者compareAndSetState(int, int)方法：
-
-- tryAcquire(int)
-
-- tryRelease(int)
-
-- tryAcquireShared(int)
-
-- tryReleaseShared(int)
-
-- isHeldExclusively()
-
-  以上这些方法，都需要使用者自己实现。
-
-默认情况下，这些方法都会抛出UnsupportedOperationException,这些方法的实现必须是内部线程安全的。
-
-即使这个类基于内部FIFO队列，它也不会自动执行FIFO获取策略。独占同步的核心形式为:
-
-```
-Acquire:
-     while (!tryAcquire(arg)) {
-        enqueue thread if it is not already queued;
-        possibly block current thread;
-     }
-
- Release:
-     if (tryRelease(arg))
-        unblock the first queued thread;
-```
-
-### AbstractQueuedSynchronizer.Node
