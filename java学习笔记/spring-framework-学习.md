@@ -253,11 +253,13 @@ PropertyPlaceholderBeanDefinitionParser解析调用
 
 ```
 
-## BeanFactoryPostProcessor
+## spring容器的扩展点
+
+### BeanFactoryPostProcessor
 
 spring bean工厂的后置处理器，允许自定义修改应用程序上下文的bean定义（bean元数据定义），调整上下文底层bean工厂的bean属性值，spring容器可以在bean定义中自动检测BeanFactoryPostProcessor ，并提前创建它们。PropertyResourceConfigurer、PropertyOverrideConfigurer 都是具体的实现。
 
-在标准初始化之后修改应用程序上下文的内部bean工厂。所有bean定义都已加载，但还没有实例化任何bean。这就允许覆盖或添加属性，甚至可以向预先初始化bean添加属性。
+**在标准初始化之后修改应用程序上下文的内部bean工厂。所有bean定义都已加载，但还没有实例化任何bean。这就允许覆盖或添加属性，甚至可以向预先初始化bean添加属性。在实现类方法postProcessBeanFactory中不要直接调用BeanFactory.getBean方法，因为这会导致bean对象的初始化**
 
 例如通过配置文件定义bean属性的值，通过xml中的占位符（${}）进行属性的注入。
 
@@ -275,7 +277,7 @@ spring 配置文件
 	</bean>
 ```
 
-属性配置文件：classpath:gaoxugang/conf/test.proerties
+属性配置文件：classpath:gaoxugang/conf/test.properties
 
 ```java
 jdbc.driverClassName=org.hsqldb.jdbcDriver
@@ -285,6 +287,29 @@ jdbc.password=root
 ```
 
 最终执行的类是PropertySourcesPlaceholderConfigurer，该类实现了BeanFactoryPostProcessor接口，会在bean定义解析完成之后，spring容器会回调postProcessBeanFactory方法，来完成属性值得替换，具体的实现请看org.springframework.context.support.PropertySourcesPlaceholderConfigurer#postProcessBeanFactory
+
+### BeanPostProcessor
+
+BeanPostProcessor对已经初始化的bean做操作，
+
+接口定义的方法,都是在bean实例化完成和依赖注入完成之后回调的，一个是自定义或者初始化方法调用之前，一个是初始化方法调用之后。
+
+```java
+/**
+实例化、依赖注入完毕，在调用显示的初始化之前完成一些定制的初始化任务
+**/
+default Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+		return bean;
+}
+/**
+实例化、依赖注入、初始化完毕时执行
+**/
+default Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+		return bean;
+}
+```
+
+
 
 # spring-AOP
 
