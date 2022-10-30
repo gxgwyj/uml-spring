@@ -1,3 +1,5 @@
+
+
 # spring-framework
 
 ## 控制反转（IoC）&依赖注入（DI）
@@ -48,13 +50,47 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 - 解析消息的能力，支持国际化。继承自**MessageSource**接口【消息解析功能】。
 - 上下文继承能力，如一个单独的父上下文可以被整个web应用程序使用，而每个servlet都有自己独立于任何其他servlet的子上下文【上下文继承功能】
 
-## BeanFactory接口
+## BeanFactory
 
 定义：**用于访问Spring bean容器的根接口。这是bean容器的基本客户端视图;其他接口如ListableBeanFactory和ConfigurableBeanFactory可用于特定目的**
 
-![](./pic/BeanFactory.png)
-
 BeanFactory接口提供的能力如下：
+
+```java
+public interface BeanFactory {
+
+	String FACTORY_BEAN_PREFIX = "&";
+
+
+	Object getBean(String name) throws BeansException;
+
+	
+	<T> T getBean(String name, @Nullable Class<T> requiredType) throws BeansException;
+
+	Object getBean(String name, Object... args) throws BeansException;
+	
+	<T> T getBean(Class<T> requiredType) throws BeansException;
+	
+	<T> T getBean(Class<T> requiredType, Object... args) throws BeansException;
+	
+	boolean containsBean(String name);
+	
+	boolean isSingleton(String name) throws NoSuchBeanDefinitionException;
+	
+	boolean isPrototype(String name) throws NoSuchBeanDefinitionException;
+	
+	boolean isTypeMatch(String name, ResolvableType typeToMatch) throws NoSuchBeanDefinitionException;
+	
+	boolean isTypeMatch(String name, @Nullable Class<?> typeToMatch) throws NoSuchBeanDefinitionException;
+	
+	Class<?> getType(String name) throws NoSuchBeanDefinitionException;
+	
+	String[] getAliases(String name);
+
+}
+```
+
+
 
 - BeanFactory是java组件的容器，是一个产生和提供组件的“工厂”
 
@@ -64,15 +100,123 @@ BeanFactory接口提供的能力如下：
 
   
 
-Bean工厂实现应该尽可能地支持标准的Bean生命周期接口。完整的初始化方法及其标准顺序为:
-
-参照spring官方api：https://docs.spring.io/spring-framework/docs/3.2.8.RELEASE/javadoc-api/
-
-![](./pic/BeanFactory构建过程.png)
-
 ### ListableBeanFactory
 
-BeanFactory接口的扩展
+BeanFactory接口的扩展接口，由接口定义的方法可以看出主要操作bean（BeanDefinition）定义的相关信息。
+
+```java
+public interface ListableBeanFactory extends BeanFactory {
+
+	boolean containsBeanDefinition(String beanName);
+
+	int getBeanDefinitionCount();
+
+	String[] getBeanDefinitionNames();
+
+	String[] getBeanNamesForType(ResolvableType type);
+
+	String[] getBeanNamesForType(@Nullable Class<?> type);
+
+	String[] getBeanNamesForType(@Nullable Class<?> type, boolean includeNonSingletons, boolean allowEagerInit);
+
+	<T> Map<String, T> getBeansOfType(@Nullable Class<T> type) throws BeansException;
+
+	<T> Map<String, T> getBeansOfType(@Nullable Class<T> type, boolean includeNonSingletons, boolean allowEagerInit)
+			throws BeansException;
+
+	
+	String[] getBeanNamesForAnnotation(Class<? extends Annotation> annotationType);
+
+	Map<String, Object> getBeansWithAnnotation(Class<? extends Annotation> annotationType) throws BeansException;
+    
+	<A extends Annotation> A findAnnotationOnBean(String beanName, Class<A> annotationType) throws NoSuchBeanDefinitionException;
+
+}
+```
+
+
+
+### HierarchicalBeanFactory
+
+BeanFactory接口的扩展接口，由接口定义的方法可以看出主要操作有层次结构的BeanFactory 关系
+
+```java
+public interface HierarchicalBeanFactory extends BeanFactory {
+    
+	@Nullable
+	BeanFactory getParentBeanFactory();
+
+    /**
+    返回本地bean工厂是否包含给定名称的bean，忽略在祖先上下文中定义的bean。
+    **/
+	boolean containsLocalBean(String name);
+
+}
+```
+
+
+
+### AutowireCapableBeanFactory
+
+BeanFactory接口的扩展，提供自动装配的能力（里面包含了创建bean，自动装配bean的方法），前提是它们希望为现有的bean实例公开此功能。BeanFactory的这个子接口并不打算在普通应用程序代码中使用:对于典型用例，坚持使用BeanFactory或ListableBeanFactory。
+
+```java
+public interface AutowireCapableBeanFactory extends BeanFactory {
+    
+	int AUTOWIRE_NO = 0;
+
+	int AUTOWIRE_BY_NAME = 1;
+
+	int AUTOWIRE_BY_TYPE = 2;
+
+	int AUTOWIRE_CONSTRUCTOR = 3;
+    
+	@Deprecated
+	int AUTOWIRE_AUTODETECT = 4;
+
+    /**
+    *创建bean的方法
+    **/
+	<T> T createBean(Class<T> beanClass) throws BeansException;
+
+	void autowireBean(Object existingBean) throws BeansException;
+
+	Object configureBean(Object existingBean, String beanName) throws BeansException;
+
+	Object createBean(Class<?> beanClass, int autowireMode, boolean dependencyCheck) throws BeansException;
+
+	Object autowire(Class<?> beanClass, int autowireMode, boolean dependencyCheck) throws BeansException;
+    
+	void autowireBeanProperties(Object existingBean, int autowireMode, boolean dependencyCheck) throws BeansException;
+
+	void applyBeanPropertyValues(Object existingBean, String beanName) throws BeansException;
+
+	Object initializeBean(Object existingBean, String beanName) throws BeansException;
+
+    /**
+    ** BeanPostProcessor before
+    **/
+	Object applyBeanPostProcessorsBeforeInitialization(Object existingBean, String beanName) throws BeansException;
+
+    /**
+    ** BeanPostProcessor after
+    **/
+	Object applyBeanPostProcessorsAfterInitialization(Object existingBean, String beanName) throws BeansException;
+
+	void destroyBean(Object existingBean);
+
+	<T> NamedBeanHolder<T> resolveNamedBean(Class<T> requiredType) throws BeansException;
+
+	@Nullable
+	Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName) throws BeansException;
+
+	@Nullable
+	Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName, @Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException;
+
+}
+```
+
+
 
 2、启动spring的类和方法：
 
@@ -169,6 +313,10 @@ spring容器产生bean的最终载体
 ApplicationContext中包含了BeanFactory实例，如下：
 
 ![](./pic/ApplicationContext-BeanFactory.png)
+
+### AbstractAutowireCapableBeanFactory
+
+
 
 ## BeanDefinitionRegistry
 
@@ -307,6 +455,82 @@ default Object postProcessBeforeInitialization(Object bean, String beanName) thr
 default Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
 		return bean;
 }
+```
+
+### FactoryBean
+
+这又是一个spring容器的扩展点，实现FactoryBean接口来自定义bean的实例化逻辑。FactoryBean接口是可插入到Spring IoC容器的实例化逻辑中的一个点，如果你有自己复杂的bean初始化逻辑，可以继承FactoryBean来实现自己的实例化逻辑
+
+```java
+public interface FactoryBean<T> {
+
+    /**
+    返回此工厂创建的对象的实例。实例可能是共享的，这取决于该工厂返回的是单例还是原型。
+    **/
+	T getObject() throws Exception;
+    
+    /**
+    返回getObject()方法返回的对象类型，如果事先不知道该类型，则返回null
+    **/
+	Class<?> getObjectType();
+    
+    /**
+    返回创建的bean是否是单例对象
+    **/
+	default boolean isSingleton() {
+		return true;
+	}
+}
+```
+
+如下为定义的FactoryBean
+
+```java
+public class PersonBeanFactory implements FactoryBean<Person> {
+
+	private static Person person = new Person();
+
+	@Override
+
+	public Person getObject() throws Exception {
+		return person;
+	}
+
+	@Override
+	public Class<?> getObjectType() {
+		return Person.class;
+	}
+
+	@Override
+	public boolean isSingleton() {
+		return true;
+	}
+}
+```
+
+spring配置文件
+
+```xml
+<bean id ="person" class="gaoxugang.extension.PersonBeanFactory"></bean>
+```
+
+测试类
+
+```java
+@Test
+	public void testFactoryBean(){
+		// 启动spring 容器
+		ApplicationContext ctx = new ClassPathXmlApplicationContext("gaoxugang/factoryBean.xml");
+
+		// 获取factoryBean创建的bean实例
+		Person person = ctx.getBean("person", Person.class);
+		System.out.println(person);
+
+		// 获取factoryBean实例本省
+		PersonBeanFactory bean = ctx.getBean("&person", PersonBeanFactory.class);
+		System.out.println(bean);
+		System.out.println(bean.getObjectType());
+	}
 ```
 
 
