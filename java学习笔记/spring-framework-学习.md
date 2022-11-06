@@ -58,35 +58,20 @@ BeanFactory接口提供的能力如下：
 
 ```java
 public interface BeanFactory {
-
 	String FACTORY_BEAN_PREFIX = "&";
 
-
 	Object getBean(String name) throws BeansException;
-
-	
 	<T> T getBean(String name, @Nullable Class<T> requiredType) throws BeansException;
-
 	Object getBean(String name, Object... args) throws BeansException;
-	
 	<T> T getBean(Class<T> requiredType) throws BeansException;
-	
 	<T> T getBean(Class<T> requiredType, Object... args) throws BeansException;
-	
 	boolean containsBean(String name);
-	
 	boolean isSingleton(String name) throws NoSuchBeanDefinitionException;
-	
 	boolean isPrototype(String name) throws NoSuchBeanDefinitionException;
-	
 	boolean isTypeMatch(String name, ResolvableType typeToMatch) throws NoSuchBeanDefinitionException;
-	
 	boolean isTypeMatch(String name, @Nullable Class<?> typeToMatch) throws NoSuchBeanDefinitionException;
-	
 	Class<?> getType(String name) throws NoSuchBeanDefinitionException;
-	
 	String[] getAliases(String name);
-
 }
 ```
 
@@ -108,25 +93,15 @@ BeanFactory接口的扩展接口，由接口定义的方法可以看出主要操
 public interface ListableBeanFactory extends BeanFactory {
 
 	boolean containsBeanDefinition(String beanName);
-
 	int getBeanDefinitionCount();
-
 	String[] getBeanDefinitionNames();
-
 	String[] getBeanNamesForType(ResolvableType type);
-
 	String[] getBeanNamesForType(@Nullable Class<?> type);
-
 	String[] getBeanNamesForType(@Nullable Class<?> type, boolean includeNonSingletons, boolean allowEagerInit);
-
 	<T> Map<String, T> getBeansOfType(@Nullable Class<T> type) throws BeansException;
-
 	<T> Map<String, T> getBeansOfType(@Nullable Class<T> type, boolean includeNonSingletons, boolean allowEagerInit)
 			throws BeansException;
-
-	
 	String[] getBeanNamesForAnnotation(Class<? extends Annotation> annotationType);
-
 	Map<String, Object> getBeansWithAnnotation(Class<? extends Annotation> annotationType) throws BeansException;
     
 	<A extends Annotation> A findAnnotationOnBean(String beanName, Class<A> annotationType) throws NoSuchBeanDefinitionException;
@@ -142,17 +117,15 @@ BeanFactory接口的扩展接口，由接口定义的方法可以看出主要操
 
 ```java
 public interface HierarchicalBeanFactory extends BeanFactory {
-    
-	@Nullable
 	BeanFactory getParentBeanFactory();
-
     /**
     返回本地bean工厂是否包含给定名称的bean，忽略在祖先上下文中定义的bean。
     **/
 	boolean containsLocalBean(String name);
-
 }
 ```
+
+#### ConfigurableBeanFactory
 
 
 
@@ -164,33 +137,50 @@ BeanFactory接口的扩展，提供自动装配的能力（里面包含了创建
 public interface AutowireCapableBeanFactory extends BeanFactory {
     
 	int AUTOWIRE_NO = 0;
-
 	int AUTOWIRE_BY_NAME = 1;
-
 	int AUTOWIRE_BY_TYPE = 2;
-
 	int AUTOWIRE_CONSTRUCTOR = 3;
-    
-	@Deprecated
-	int AUTOWIRE_AUTODETECT = 4;
 
     /**
-    *创建bean的方法
+    完全创建给定类的新bean实例执行bean的完整初始化，包括所有适用的beanpostprocessor。
+    包含了初始化回调操作
     **/
-	<T> T createBean(Class<T> beanClass) throws BeansException;
+    <T> T createBean(Class<T> beanClass) throws BeansException;
 
+   /**
+   自动注入bean的属性，existingBean代表已经存在的bean，实现方法中会根据依赖bean的名称从工厂中获取
+   bean
+   **/
 	void autowireBean(Object existingBean) throws BeansException;
 
+    /**
+    里面会执行用户定义bean的init方法（自定义）
+    **/
 	Object configureBean(Object existingBean, String beanName) throws BeansException;
 
-	Object createBean(Class<?> beanClass, int autowireMode, boolean dependencyCheck) throws BeansException;
-
-	Object autowire(Class<?> beanClass, int autowireMode, boolean dependencyCheck) throws BeansException;
+	/**
+	更细化的createBean方法
+	**/
+    Object createBean(Class<?> beanClass, int autowireMode, boolean dependencyCheck) throws BeansException;
     
+    /**
+    更细化的autowire方法
+    **/
+	Object autowire(Class<?> beanClass, int autowireMode, boolean dependencyCheck) throws BeansException;
+   
+    /**
+    根据名称或类型自动装配给定bean实例的bean属性，以便应用实例化后回调(例如注  释驱动的注入)。
+    **/
 	void autowireBeanProperties(Object existingBean, int autowireMode, boolean dependencyCheck) throws BeansException;
 
+    /**
+    同autowireBeanProperties方法
+    **/
 	void applyBeanPropertyValues(Object existingBean, String beanName) throws BeansException;
 
+    /**
+    初始化给定的原始bean
+    **/
 	Object initializeBean(Object existingBean, String beanName) throws BeansException;
 
     /**
@@ -203,6 +193,9 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
     **/
 	Object applyBeanPostProcessorsAfterInitialization(Object existingBean, String beanName) throws BeansException;
 
+    /**
+    销毁给定的bean实例
+    **/
 	void destroyBean(Object existingBean);
 
 	<T> NamedBeanHolder<T> resolveNamedBean(Class<T> requiredType) throws BeansException;
@@ -216,7 +209,9 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 }
 ```
 
+#### AbstractAutowireCapableBeanFactory
 
+AutowireCapableBeanFactory的基础实现，主要实现了bean的创建，注入等功能。
 
 2、启动spring的类和方法：
 
