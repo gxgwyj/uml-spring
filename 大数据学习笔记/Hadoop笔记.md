@@ -51,6 +51,18 @@ cp etc/hadoop/*.xml input
         <name>dfs.replication</name>
         <value>1</value>
     </property>
+    <property>
+        <name>dfs.namenode.name.dir</name>
+        <value>file:/opt/hadoop-2.10.1/data/namenode</value>
+    </property>
+    <property>
+        <name>dfs.datanode.data.dir</name>
+        <value>file:/opt/hadoop-2.10.1/data/datanode</value>
+    </property>
+   <property>
+     <name>dfs.permissions.enabled</name>
+     <value>false</value>
+   </property>
 </configuration>
 ```
 
@@ -73,3 +85,16 @@ http://192.168.202.129:50070/dfshealth.html#tab-overview
 控制台设置参考文档  https://blog.csdn.net/u011331844/article/details/103917480
 
 File /hbase/.tmp/hbase.version could only be replicated to 0 nodes instead of minReplication (=1).  There are 1 datanode(s) running and 1 node(s) are excluded in this operation.
+
+#### HDFS介绍
+
+分布式的文件系统，HDFS提供对应用程序数据的高吞吐量访问，适用于拥有大型数据集的应用程序，如大量数据的批处理。
+
+#### HDFS架构
+
+NameNode：管理文件系统命名空间，规范客户端对文件的访问（元数据的管理）
+
+DataNode：
+
+
+

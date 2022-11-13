@@ -78,8 +78,44 @@ hbase:namespace
 ```xml
 <property>
   <name>hbase.rootdir</name>
-  <value>hdfs://localhost:8020/hbase</value>
+  <value>hdfs://192.168.1.103:9000/hbase</value>
 </property>
 ```
 
 注意：单机模式的hbase运行，所依赖的zookeeper、HMaster、HRegionServer都在同一个JVM进程中，数据也是存储在本地的/tmp/目录下面，在真实的生产环境中，数据肯定是存储在HDFS中
+
+配置hbase主机host,以便客户端可以访问，如centos-128。
+
+## 使用java-api访问hbase
+
+首先得设置host（参照：https://www.zhangshengrong.com/p/rG1V7WnMa3/），否则无法访问，如：
+
+192.168.202.128 centos-128
+
+代码如下：
+
+```java
+public static void main(String[] args) throws IOException {
+        Configuration conf = HBaseConfiguration.create();
+        // 配置ZK的地址，通过ZK可以找到HBase
+        conf.set("hbase.zookeeper.quorum", "192.168.202.128:2181");
+        Connection connection = ConnectionFactory.createConnection(conf);
+        Admin admin = connection.getAdmin();
+        Table user = admin.getConnection().getTable(TableName.valueOf("user"));
+        Get get = new Get("gaoxugang".getBytes());
+        for (int i = 0; i < 20000000 ; i++) {
+            Result rs = user.get(get);
+            for(KeyValue keyValue: rs.list()){
+                 //列簇名
+                System.out.println("family :" + Bytes.toString(keyValue.getFamily()));
+                 //列名
+                System.out.println("qualifier :"+ Bytes.toString(keyValue.getQualifier()));
+                //列对应的值
+                System.out.println("value :"+Bytes.toString(keyValue.getValue()));
+                //数据最后更新时间
+                System.out.println("timestamp :" +keyValue.getTimestamp());
+            }
+        }
+    }
+```
+
