@@ -78,6 +78,7 @@ hbase:namespace
 ```xml
 <property>
   <name>hbase.rootdir</name>
+  <!-- hdsf文件系统的NameNode信息 -->
   <value>hdfs://192.168.1.103:9000/hbase</value>
 </property>
 ```
