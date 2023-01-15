@@ -290,4 +290,50 @@ TIDYING -> TERMINATED：当terminated()钩子方法完成时
 
 基本线程阻塞原语（可以是线程停止运行），这个类与使用它的每个线程关联一个许可，如果许可证可用，对park的调用将立即返回，并在此过程中消耗许可证;否则可能堵塞。如果许可证尚未可用，则调用unpark使其可用。(但与信号量不同的是，许可证不会累积。最多只有一个。)
 
-方法park和unpark提供了有效的阻塞和解除阻塞线程的方法。在一个线程调用park和另一个线程试图unpark之间的竞争将保持活性。park方法也可以在任何其他时间“没有原因”地返回，因此通常必须在返回时重新检查条件的循环中调用。从这个意义上说，停车是对“忙碌等待”的优化，它不会浪费太多时间旋转，但必须与unpark配对才能有效。
+方法park和unpark提供了有效的**阻塞**和**解除阻塞**线程的方法。在一个线程调用park和另一个线程试图unpark之间的竞争将保持活性。park方法也可以在任何其他时间“没有原因”地返回，因此通常必须在返回时重新检查条件的循环中调用。从这个意义上说，park是对“忙碌等待”的优化，它不会浪费太多时间旋转，但必须与unpark配对才能有效（减少使用自旋而引起的开销？）。
+
+```java
+while (!canProceed()) 
+{
+    ... LockSupport.park(this);
+}
+```
+
+简单的使用示例：
+
+```java
+// 先进先出互斥
+class FIFOMutex {
+   // 定义一个原子类型的boolean
+   private final AtomicBoolean locked = new AtomicBoolean(false);
+   // 非阻塞的线程安全的队列
+   private final Queue<Thread> waiters = new ConcurrentLinkedQueue<Thread>();
+
+   public void lock() {
+       boolean wasInterrupted = false;
+       Thread current = Thread.currentThread();
+       // 线程加入到等待队列中
+       waiters.add(current);
+
+       // Block while not first in queue or cannot acquire lock
+       // Queue.peek 获取队列的第一个元素
+       while (waiters.peek() != current || !locked.compareAndSet(false, true)) {
+           LockSupport.park(this);
+            // ignore interrupts while waiting
+           if (Thread.interrupted())
+               wasInterrupted = true;
+       }
+       
+       // 删除第一个元素
+       waiters.remove();
+       // reassert interrupt status on exit
+       if (wasInterrupted)          
+           current.interrupt();
+   }
+
+   public void unlock() {
+       locked.set(false);
+       LockSupport.unpark(waiters.peek());
+   }
+ }
+```
