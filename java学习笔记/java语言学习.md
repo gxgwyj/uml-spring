@@ -337,3 +337,200 @@ class FIFOMutex {
    }
  }
 ```
+
+### Java-内部类
+
+回调：回调就是把一个**函数作为参数**传到另一个函数里面，当那个函数执行完之后，再执行传进去的这个函数。
+
+使用大白话描述：A给B发出指令，同时告诉B，如果指令执行结束后，可以执行C操作，其中C就是回调函数。
+
+JavaScript实现
+
+```javascript
+// 被调用的函数
+function print(a,fun){
+	console.log(a);
+	fund();
+}
+// 回调函数
+function callback(){
+	console.log("调用回调函数callback");
+}
+// 主函数
+function main(){
+	//调用函数，并且传入回调函数
+	print("参数a",callback);
+}
+
+
+```
+
+C语言实现
+
+```
+#include<stdio.h>
+
+// 被调用函数，函数指针参数 无返回值，参数为int的函数
+void fun(int a,void (*c)(int))
+{
+	printf("\nfun接受参数：%d\n",a);
+	a = a * 1 - 5 + 6 / 7 * 8;
+	(*c)(a);
+}
+// 回调函数1
+void callback1(int a)
+{
+	printf("回调1结果：%d\n",a);
+}
+// 回调函数2
+void callback2(int a)
+{
+	printf("回调2结果：%d\n",a*2);
+}
+int main()
+{
+	fun(2,callback1);
+	fun(2,callback2);
+}
+```
+
+java中的回调函数如何实现呢？java中的回调是用异步接口实现，使用方法与上述类似，只是传入的参数为接口。
+
+```java
+/**
+回调接口
+**/
+public interface CallBack(){
+	void back(int result);
+}
+/**
+被调用方
+**/
+public class Callee{
+    public void fun(int a,CallBack callBack){
+         System.out.println(i);
+         callBack.back(i);
+    }
+}
+/**
+主线程调用
+**/
+public static void main(String[] args){
+    Callee callee = new Callee();
+    callee.fun(2,new CallBack{
+        @Override
+        public void call(int result){
+             System.out.println("回调函数收到结果:"+result);
+        }
+    });
+}
+```
+
+java异步调用回调模式
+
+（1）定义回调函数（2）定义调用的方法（3）发起函数调用时使用多线程的方式，并且传入回调函数。
+
+### java-Unsafe类
+
+java中提供的一个低级别（如直接操作内存）的操作类集合，不安全的操作，虽然这个类中的方法都是公开的，但是只有可信任的代码（何为可信任的代码？）才能获取该类的实例。它是java中原子类中CAS操作的基础，如juc包中的AtomicInteger以及其他的原子类,使用该类应该小心，**因为它可以在内存中读取和写入任何数据**。
+
+该类中大部分的方法是native方法，意味着在JVM中使用的是本地方法栈，实际上通过获取变量的绝对地址来操作变量。
+
+使用该类实例的前提必须是系统类加载器加载的class，否则会抛出异常。
+
+```
+说一下offset，offeset为字段的偏移量，每个对象有个地址，offset是字段相对于对象地址的偏移量，对象地址记为baseAddress，字段偏移量记为offeset，那么字段对应的实际地址就是baseAddress+offeset，所以cas通过对象、偏移量就可以去操作字段对应的值了。
+```
+
+```java
+/**
+方法描述：从给定的java对象中获取基本类型int
+Object o:在堆中的java对象
+long offset:变量在java堆中的位置
+返回值：指定java对象中获取的值
+**/
+public native int getInt(Object o, long offset);
+
+/**
+方法描述：将值存储到给定的Java变量中。
+Object o:在堆中的java对象
+long offset:变量在java堆中的位置
+int x:要存储到指定Java变量中的值
+**/
+public native void putInt(Object o, long offset, int x);
+
+/**
+方法描述：从给定的Java变量中获取一个引用值（是java对象）。
+Object o:在堆中的java对象
+long offset:变量在java堆中的位置
+**/
+public native Object getObject(Object o, long offset);
+
+/**
+方法描述：从给定的内存地址中获取一个值。
+Object o:在堆中的java对象
+long offset:变量在java堆中的位置
+**/
+public native byte getByte(long address);
+
+/**
+方法描述：将值存储到给定的内存地址中
+Object o:在堆中的java对象
+long offset:变量在java堆中的位置
+**/
+public native void  putByte(long address, byte x);
+
+/**
+方法描述：从给定的内存地址获取本机指针
+**/
+public native long getAddress(long address);
+
+/**
+将本机指针存储到给定的内存地址中。
+**/
+public native void putAddress(long address, long x);
+
+/**
+分配一个新的本机内存块，以字节为单位
+**/
+public native long allocateMemory(long bytes);
+
+/**
+调整一个新的本机内存块的大小，到给定的字节大小。
+**/
+public native long reallocateMemory(long address, long bytes);
+
+public native long staticFieldOffset(Field f);
+
+/**
+方法描述：原子更新对象中的变量值，底层实现为CPU指令cmpxchg,具有原子性。
+Object o:在堆中的java对象
+long offset:变量在java堆中的位置
+Object expected：预期值
+Object x：更新的最终值
+**/
+public final native boolean compareAndSwapObject(Object o, long offset,
+                                                     Object expected,
+                                                     Object x);
+/**
+使用volatile的语义从给定的Java变量中获取一个引用值
+**/
+public native Object getObjectVolatile(Object o, long offset);
+
+/**
+解除阻塞在park的给定线程
+**/
+public native void unpark(Object thread);
+
+/**
+暂停当前执行的线程
+**/
+public native void park(boolean isAbsolute, long time);
+
+/**
+使用原子的方式增加long值
+**/
+public final long getAndAddLong(Object o, long offset, long delta)；
+```
+
+总结：该类中通过直接使用内存地址的方式改变内存的内容，诸如compareAndSwap之类的方法，平且通过了暂定线程和解除暂停线程的方法park、unpark等方法。
