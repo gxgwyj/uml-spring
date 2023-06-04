@@ -534,3 +534,17 @@ public final long getAndAddLong(Object o, long offset, long delta)；
 ```
 
 总结：该类中通过直接使用内存地址的方式改变内存的内容，诸如compareAndSwap之类的方法，平且通过了暂定线程和解除暂停线程的方法park、unpark等方法。
+
+### java-NIO
+
+更高效的操作IO。
+
+**Buffer：缓存区，底层由数组实现。**
+
+java 中的直接内存和非直接内存
+
+**Channel：I/O操作的连接。**
+
+表示对一个IO设备的连接，比如硬件设备、网络、文件等。通道对于多线程访问是安全的。
+
+既可以操作读数据，也可以操作写数据。
