@@ -86,17 +86,17 @@ Consumer：接口单个参数，没有返回值得函数接口
 
 #### sleep方法
 
-native方法，线程暂停执行，可以暂停指定的时间，如果该线程拥有监视器，并不放弃监视器，依然拥有监视器（也就是锁），暂停期间线程执行阻塞。
+native方法，线程暂停执行，可以暂停指定的时间，如果该线程拥有监视器，并不放弃监视器，依然拥有监视器（也就是锁），暂停期间线程执行阻塞，方法会抛出InterruptedException异常，就是需要在休眠期间监听到线程中断的信号。
 
 #### start方法
 
-native方法，开启线程，同一个线程只能被执行一次，不可以重复开启线程，后面JVM会调用run方法。
+native方法，启动线程，线程不一定马上运行。同一个线程只能被执行一次，不可以重复开启线程，后面JVM会调用run方法。
 
 #### interrupt方法
 
 1、给线程发起中断指令的方法，**该方法执行后，线程不一定马上停止，只是加了一个停止的标记位。**
 
-2、线程在执行任务的时候，必须捕获InterruptedException异常，目的就是为了能让正在执行的线程收到线程被中断的通知：
+2、线程在执行任务的时候，如果有调用sleep方法，必须捕获InterruptedException异常，目的就是为了能让正在休眠的线程收到线程被中断的通知而去做中断处理：
 
 ```java
  @Override
@@ -128,9 +128,11 @@ native方法，开启线程，同一个线程只能被执行一次，不可以�
 
 实例方法,测试**此线程**是否已被中断。线程的中断状态不受此方法的影响。由于线程在中断时不是活动的而忽略的线程中断将由这个返回false的方法反映出来，该方法的作用线程对象，如A线程调用B线程的isInterrupted方法，代表判断的是B线程的中断状态。
 
-（5）join方法：等待线程执行结束（最多等待的时间可以设置），实现原理：外部线程调用执行线程的join（synchroized修饰），如果线程没有执行完成，则调用wait使得线程等待（释放锁），直到该线程运行结束,线程运行结束的时候会调用this.notifyAll(),则可继续运行代码，源码如下：
+#### join方法
 
-所以java的作者不建议在Thread类的实例中手动的调用wait，notify，notifyAll等方法（个人感觉这个方法像是一个监听通知的方法，监听线程完成的时候，发出线程完成的同通知，执行后面的流程，我等你执行完吧，等你执行完，我再往下执行）
+**等待线程执行结束（最多等待的时间可以设置），简而言之，等待子线程完成之后再执行后面的主线程逻辑**，实现原理：外部线程调用执行线程的join（synchroized修饰），如果线程没有执行完成，则调用wait使得线程等待（释放锁），直到该线程运行结束,线程运行结束的时候会调用this.notifyAll(),则可继续运行代码，源码如下：
+
+所以java的作者不建议在Thread类的实例中手动的调用wait，notify，notifyAll等方法（个人感觉这个方法像是一个监听通知的方法，监听线程完成的时候，发出线程完成的同通知，执行后面的流程，**我等你执行完吧，等你执行完，我再往下执行**）
 
 ```java
 public final synchronized void join(long millis) -- 使用了 synchronized 关键字修饰
@@ -159,37 +161,77 @@ public final synchronized void join(long millis) -- 使用了 synchronized 关�
     }
 ```
 
-（6）yield方法：向调度器暗示当前线程愿意放弃当前对处理器的使用。线程调度器可以忽略这个提示。
+join执行逻辑
 
-（7）start方法：启动线程，线程不一定马上运行。如果线程不是初始状态“NEW”，则无法启动线程。
+![](./pic/Thread-join执行逻辑.png)
 
-（8）isAlive方法：测试线程是否处于“活动”状态（何为活动状态？如果一个线程已经启动并且还没有死亡，那么它就是活的。）**判断线程是否运行结束可以使用该方法。**
+#### currentThread方法
 
-（9） Thread.currentThread()：获取当前线程对象引用。
+静态方法：返回当前正在执行的线程对象的引用，如main线程。
 
-（9）java中线程状态的枚举类：java.lang.Thread.State
+#### isAlive方法
 
-**NEW**:尚未启动的线程的状态.
+测试线程是否处于“活动或者说运行”状态（何为活动状态？如果一个线程已经启动并且还没有死亡，那么它就是活的。）**判断线程是否运行结束可以使用该方法。**
 
-**RUNNABLE**:可运行线程的线程状态。处于可运行状态的线程正在Java虚拟机中执行，但它可能正在等待来自操作系统的其他资源，比如处理器。
+#### 线程状态
 
-**BLOCKED**:等待监视器锁的阻塞线程的线程状态(调用synchronized方法阻塞)。处于阻塞状态的线程正在等待监视器锁进入同步块/方法，或者在调用Object.wait后重新进入同步块/方法。
+java.lang.Thread.State  6种线程状态
 
-**WAITING**：线程等待状态，调用以下方法会使线程进入等待状态：
+```java
+ public enum State {
+        /**
+         * 尚未启动的线程的状态
+         */
+        NEW,
 
-- Object.wait（未设置超时时间）
-- Thread.join（未设置超时时间）join方法，本质上也是调用了wait方法。
-- LockSupport.park
+        /**
+         * 可运行线程的线程状态。处于可运行状态的线程正在Java虚拟机中执行，但它可能正在等待来自操作系统	          * (如处理器)的其他资源（也就是可能也不是正在执行）。
+         */
+        RUNNABLE,
 
-**TIMED_WAITING**：线程有时间的等待，调用以下方法会使线程进入该状态：
+        /**
+         *阻塞状态：比如等待调用被synchronized修饰的同步方法（等待monitor锁）或者调用Object.wait方          * 法后重新又进入方法的执行（先调用wait方法，其他线程又调用了notify，该线程又继续执行，但只有其          * 他线程执行完成的时候，该线程才能执行）
+         */
+        BLOCKED,
 
-- Thread.sleep
-- Object.wait with timeout
-- Thread.join with timeout
-- LockSupport.parkNanos
-- LockSupport.parkUntil
+        /**
+         * 等待状态，以下情况会导致线程处于等待状态：
+         *
+         * 调用Object.wait（未设置超时时间）
+         * 调用Thread.join（未设置超时时间）join方法，本质上也是调用了wait方法。
+         * 调用LockSupport.park
+         
+         * 处于等待状态的线程正在等待另一个线程执行特定的操作。
+         * 例如，在一个对象上调用object.wait()的线程正在等待另一个线程在该对象上调用                        * object.notify()或object.notifyall()。调用thread.join()的线程正在等待指定的线程止。
+         */
+        WAITING,
 
-**TERMINATED**：线程终止状态
+        /**
+         * 线程有时间的等待。
+         * 因为调用了以下方法之一，并指定了正等待时间:
+         * Thread.sleep
+         * Object.wait with timeout
+         * Thread.join with timeout
+         * LockSupport.parkNanos
+         * LockSupport.parkUntil
+         * 
+         */
+        TIMED_WAITING,
+
+        /**
+         * 终止状态：线程执行完成
+         */
+        TERMINATED;
+    }
+```
+
+```
+BLOCKED和WAITING都是非活动线程的状态，但是WAITING线程如果不先进入BLOCKED状态就不能运行。等待线程“不想”活动，而阻塞线程“想”活动，但不能，因为不是轮到它们。
+```
+
+#### 守护线程-daemon
+
+在java中，线程分为两种：用户线程和守护线程。用户线程拥有比价高的优先级。守护线程会随之JVM的关闭而自动结束
 
 ### java-Future类
 
