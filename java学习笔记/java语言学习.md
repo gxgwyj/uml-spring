@@ -516,6 +516,10 @@ java异步调用回调模式
 
 java中提供的一个低级别（如直接操作内存）的操作类集合，不安全的操作，虽然这个类中的方法都是公开的，但是只有可信任的代码（何为可信任的代码？）才能获取该类的实例。它是java中原子类中CAS操作的基础，如juc包中的AtomicInteger以及其他的原子类,使用该类应该小心，**因为它可以在内存中读取和写入任何数据**。
 
+![](./pic/Unsafe.jpg)
+
+
+
 该类中大部分的方法是native方法，意味着在JVM中使用的是本地方法栈，实际上通过获取变量的绝对地址来操作变量。
 
 使用该类实例的前提必须是系统类加载器加载的class（也就是java类库定义的），否则会抛出异常。
@@ -633,6 +637,10 @@ public native void park(boolean isAbsolute, long time);
 **/
 public final long getAndAddLong(Object o, long offset, long delta)；
 ```
+
+#### 关于内存分配
+
+通过Unsafe操作的内存属于堆外内容，无法使用JVM的垃圾回收器回收。
 
 总结：该类中通过直接使用内存地址的方式改变内存的内容，诸如compareAndSwap之类的方法，平且通过了暂定线程和解除暂停线程的方法park、unpark等方法。
 
